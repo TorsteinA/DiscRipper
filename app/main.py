@@ -1,8 +1,12 @@
-import sys
-import time
+from fastapi import FastAPI
+from app.disc import scan_optical_drive
 
-print("Hello World from Disc Ripper Container!", flush=True)
-sys.stdout.flush()
+app = FastAPI(title="Disc Ripper")
 
-# Keep container alive briefly so you can check logs easily
-time.sleep(3600)
+@app.get("/api/health")
+def healthcheck():
+    return {"status": "ok", "message": "Disc Ripper container is running."}
+
+@app.get("/api/scan")
+async def scan_disc():
+    return await scan_optical_drive("/dev/sr0")
