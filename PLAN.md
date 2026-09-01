@@ -13,8 +13,9 @@
 - [x] Add `disc.py` for non-mounting drive detection (`blkid` & `makemkvcon`).
 - [x] Expose `/api/scan` endpoint.
 - [x] Deploy to Dockge with host privileges (`privileged: true` and `/dev:/dev`).
-- [ ] Verify optical drive scan results against physical server drive.
-- [ ] Improve isolation by removing need for privileged=true
+- [x] Verify optical drive scan results against physical server drive.
+- [x] Get a favicon to remove 404 error on accessing api
+- [x] Improve isolation by removing need for privileged=true
 
 ## Phase 3: Transcoding Engine Execution
 
