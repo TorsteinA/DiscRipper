@@ -3,6 +3,8 @@ import re
 import shutil
 import logging
 
+from app.makemkv_key_fetcher import validate_mkv_output, MakeMKVKeyError
+
 logger = logging.getLogger("ripper.disc")
 
 async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
@@ -49,6 +51,9 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
         stdout, stderr = await proc.communicate()
         output = stdout.decode(errors="ignore")
 
+        # Raise exception immediately if output indicates an expired/invalid key
+        validate_mkv_output(output)
+
         if proc.returncode == 0:
             tcount_match = re.search(r"TCOUNT:(\d+)", output)
             if tcount_match:
@@ -66,12 +71,14 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
                 result["disc_type"] = "DVD"
             elif result["has_disc"]:
                 result["disc_type"] = "Optical Media"
+
             logger.info(f"Disc inspection finished. Type: {result['disc_type']}, Titles: {result['title_count']}")
         else:
             logger.warning(f"makemkvcon exited with code {proc.returncode}: {stderr.decode().strip()}")
 
+    except MakeMKVKeyError:
+        raise
     except Exception as e:
         logger.error(f"makemkvcon execution error: {e}")
-        result["error"] = str(e)
 
     return result
