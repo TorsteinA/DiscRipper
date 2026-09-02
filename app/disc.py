@@ -72,7 +72,7 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
             elif result["has_disc"]:
                 result["disc_type"] = "Optical Media"
 
-            logger.info(f"Disc inspection finished. Type: {result['disc_type']}, Titles: {result['title_count']}")
+            logger.info(f"Disc inspection finished. Type: {result['disc_type']}, Titles: {result['title_count']}, \nOutput raw: {output}")
         else:
             logger.warning(f"makemkvcon exited with code {proc.returncode}: {stderr.decode().strip()}")
 

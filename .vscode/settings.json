@@ -1,0 +1,5 @@
+{
+  "python.analysis.extraPaths": ["."],
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "basic"
+}

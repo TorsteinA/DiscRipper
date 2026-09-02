@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Disc Ripper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="h-full flex flex-col max-w-4xl mx-auto p-6 space-y-6">
+    <!-- Header -->
+    <header
+      class="flex items-center justify-between border-b border-slate-800 pb-4"
+    >
+      <div class="flex items-center space-x-3">
+        <div
+          class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-lg"
+        >
+          💿
+        </div>
+        <h1 class="text-xl font-bold tracking-tight">Disc Ripper</h1>
+      </div>
+      <button
+        onclick="scanDrive()"
+        id="scanBtn"
+        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition"
+      >
+        Scan Drive
+      </button>
+    </header>
+
+    <!-- Key Warning / Error Banner -->
+    <div
+      id="errorBanner"
+      class="hidden p-4 rounded-lg bg-red-900/50 border border-red-700 text-red-200 text-sm"
+    ></div>
+
+    <!-- Drive Status Card -->
+    <section
+      class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-3"
+    >
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        Drive Status
+      </h2>
+      <div id="driveInfo" class="text-sm text-slate-300">
+        Click "Scan Drive" to check for inserted media.
+      </div>
+    </section>
+
+    <!-- Rip Options Form -->
+    <section
+      class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-4"
+    >
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        Configure Rip Job
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1"
+            >Title</label
+          >
+          <input
+            type="text"
+            id="titleInput"
+            placeholder="e.g. Rambo"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1"
+            >Year</label
+          >
+          <input
+            type="text"
+            id="yearInput"
+            placeholder="e.g. 2008"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1"
+            >Media Type</label
+          >
+          <select
+            id="mediaTypeSelect"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+          >
+            <option value="movie">Movie</option>
+            <option value="tv">TV Show</option>
+            <option value="movie_extra">Movie Extra</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      function toTitleCase(str) {
+        if (!str) return "";
+        return str
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+      }
+
+      async function scanDrive() {
+        const btn = document.getElementById("scanBtn");
+        const info = document.getElementById("driveInfo");
+        const banner = document.getElementById("errorBanner");
+
+        btn.disabled = true;
+        btn.textContent = "Scanning...";
+        banner.classList.add("hidden");
+
+        try {
+          const res = await fetch("/api/scan");
+          const data = await res.json();
+
+          if (!res.ok) {
+            banner.textContent = data.detail || "Scan failed";
+            banner.classList.remove("hidden");
+            info.textContent = "Scan error encountered.";
+            return;
+          }
+
+          if (data.has_disc) {
+            info.innerHTML = `
+                <div class="flex items-center space-x-2 text-emerald-400 font-medium">
+                <span>● Disc Detected</span>
+                </div>
+                <div class="mt-2 text-xs space-y-1 text-slate-300">
+                <div><strong>Label:</strong> ${data.label || "N/A"}</div>
+                <div><strong>Type:</strong> ${data.disc_type}</div>
+                <div><strong>Titles:</strong> ${data.title_count}</div>
+                </div>
+            `;
+
+            // Convert raw disc label to Title Case before filling input
+            if (data.label && !document.getElementById("titleInput").value) {
+              document.getElementById("titleInput").value = toTitleCase(
+                data.label,
+              );
+            }
+          } else {
+            info.innerHTML = `<span class="text-amber-400">No disc detected in ${data.drive}</span>`;
+          }
+        } catch (err) {
+          banner.textContent = "Network error during drive scan.";
+          banner.classList.remove("hidden");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Scan Drive";
+        }
+      }
+    </script>
+  </body>
+</html>
