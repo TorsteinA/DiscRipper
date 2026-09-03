@@ -25,6 +25,7 @@
 - [x] Catch `MakeMKVKeyError` in `app/main.py` and return HTTP 400 JSON response.
 - [x] Verify key test scenarios in Dockge (valid, missing, invalid key).
 - [x] Create minimal Single Page Application (`app/static/index.html`) served directly by FastAPI.
+- [ ] Make Result and Config typed objects, so I can check properties properly rather than by string matching.
 - [ ] Define HandBrake presets and options in `app/config.py`.
 - [ ] Define MakeMKV presets and options in `app/config.py`.
 - [ ] Add presets to SPA
@@ -33,10 +34,16 @@
 
 - [ ] Verify QuickSync H.264 (`qsv_h264`) hardware acceleration on host GPU.
 - [ ] System for storing ripping history and showing it in the WebUI
-- [ ] Add `app/ripper.py` for `makemkvcon` extraction and `HandBrakeCLI` processing.
-- [ ] Verify output directory creation.
+- [ ] Add `app/ripper.py` for `makemkvcon` extraction
+- [ ] Add `HandBrakeCLI` processing for compression
+- [ ] Verify correct creation of output directory and file name.
 
 ## Phase 5: Real-time Progress & WebSockets
 
+- [ ] Display whether drive is available and react to drive being connected/disconnected.
 - [ ] Stream real-time stdout progress parsing to the Web UI via WebSockets.
-- [ ] Add browser audio chime triggers on completion/failure.
+
+## Phase 6: QoL improvements
+
+- [ ] Add simple notification/chime on failure and completion.
+- [ ] When disk is detected, look-up autofilled title to suggest year.
