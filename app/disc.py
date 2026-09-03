@@ -5,25 +5,19 @@ import shutil
 import logging
 
 from app.makemkv_key_fetcher import validate_mkv_output, MakeMKVKeyError
+from app.models import ScanResult, DiscType
 
 logger = logging.getLogger("ripper.disc")
 
-async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
-    result = {
-        "has_disc": False,
-        "label": "",
-        "disc_type": "unknown",
-        "title_count": 0,
-        "drive": drive_path,
-        "drive_connected": False
-    }
+async def scan_optical_drive(drive_path: str = "/dev/sr0") -> ScanResult:
+    result = ScanResult(drive=drive_path)
 
     # Fail fast and clean if the physical drive is powered off / disconnected
     if not os.path.exists(drive_path):
         logger.info(f"Drive path {drive_path} not found. Drive is powered off or disconnected.")
         return result
 
-    result["drive_connected"] = True
+    result.drive_connected = True
 
     # Step 1: Fast volume label check via blkid
     logger.debug(f"Executing blkid for drive: {drive_path}")
@@ -35,9 +29,9 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
         )
         stdout, stderr = await proc.communicate()
         if proc.returncode == 0 and stdout:
-            result["label"] = stdout.decode().strip()
-            result["has_disc"] = True
-            logger.info(f"blkid successfully read disc label: '{result['label']}'")
+            result.label = stdout.decode().strip()
+            result.has_disc = True
+            logger.info(f"blkid successfully read disc label: '{result.label}'")
         else:
             logger.debug(f"blkid returned code {proc.returncode}: {stderr.decode().strip()}")
     except Exception as e:
@@ -66,22 +60,22 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
         if proc.returncode == 0:
             tcount_match = re.search(r"TCOUNT:(\d+)", output)
             if tcount_match:
-                result["title_count"] = int(tcount_match.group(1))
-                result["has_disc"] = True
-                logger.info(f"makemkvcon detected {result['title_count']} total titles on disc.")
+                result.title_count = int(tcount_match.group(1))
+                result.has_disc = True
+                logger.info(f"makemkvcon detected {result.title_count} total titles on disc.")
 
             cinfo_match = re.search(r'CINFO:2,0,"([^"]+)"', output)
-            if cinfo_match and not result["label"]:
-                result["label"] = cinfo_match.group(1)
+            if cinfo_match and not result.label:
+                result.label = cinfo_match.group(1)
 
             if "BD-ROM" in output or "Blu-ray" in output:
-                result["disc_type"] = "Blu-ray"
+                result.disc_type = DiscType.BLU_RAY
             elif "DVD-ROM" in output or "DVD-Video" in output:
-                result["disc_type"] = "DVD"
-            elif result["has_disc"]:
-                result["disc_type"] = "Optical Media"
+                result.disc_type = DiscType.DVD
+            elif result.has_disc:
+                result.disc_type = DiscType.OPTICAL_MEDIA
 
-            logger.info(f"Disc inspection finished. Type: {result['disc_type']}, Titles: {result['title_count']}, \nOutput raw: {output}")
+            logger.info(f"Disc inspection finished. Type: {result.disc_type}, Titles: {result.title_count}, \nOutput raw: {output}")
         else:
             logger.warning(f"makemkvcon exited with code {proc.returncode}: {stderr.decode().strip()}")
 

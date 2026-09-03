@@ -1,5 +1,6 @@
 import os
 import logging
+from dataclasses import asdict
 from fastapi import FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -37,7 +38,7 @@ async def favicon():
 
 @app.on_event("startup")
 async def startup_event():
-    ensure_makemkv_key()
+    ensure_makemkv_key(config.makemkv_key)
 
 @app.get("/api/health")
 def healthcheck():
@@ -48,12 +49,15 @@ def healthcheck():
 async def scan_disc():
     try:
         logger.info("Initiating optical drive scan on /dev/sr0...")
-        result = await scan_optical_drive(config["drive_path"])
-        logger.info(f"Scan complete. Disc present: {result.get('has_disc')} | Label: '{result.get('label')}' | Type: {result.get('disc_type')}")
-        return result
+        result = await scan_optical_drive(config.drive_path)
+        logger.info(f"Scan complete. Disc present: {result.has_disc} | Label: '{result.label}' | Type: {result.disc_type}")
+        return asdict(result)
     except MakeMKVKeyError as e:
-        status_code=400,
-        detail=f"MakeMKV Key Error: {str(e)}"
+        logger.error(f"Scan aborted due to MakeMKV Key failure: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"MakeMKV Key Error: {str(e)}"
+        )
 
 # Serve Static Frontend Files
 static_dir = os.path.join(os.path.dirname(__file__), "static")
@@ -65,4 +69,4 @@ async def read_index():
     index_path = os.path.join(static_dir, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    return {"message": "Disc Ripper API running. Add index.html to app/static/ for Web UI."}
+    return {"message": "Disc Ripper API running."}

@@ -18,9 +18,7 @@ def get_key_warning_message(reason: str) -> str:
         "Set 'MAKEMKV_KEY=your_key_here' in your Dockge environment variables."
     )
 
-def ensure_makemkv_key() -> bool:
-    key = os.getenv("MAKEMKV_KEY", "").strip()
-    
+def ensure_makemkv_key(key: str = "") -> bool:    
     if not key:
         logger.warning(
             "\n----------------------------------------------------------------------\n"
