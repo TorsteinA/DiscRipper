@@ -20,25 +20,13 @@ logger = logging.getLogger("ripper.main")
 app = FastAPI(title="Disc Ripper")
 config = load_config()
 
-# SVG Favicon endpoint (Optical Disc Icon)
-FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Outer Indigo Circle -->
-  <circle cx="50" cy="50" r="48" fill="#4f46e5" />
-  <!-- Shiny Disc Body -->
-  <circle cx="50" cy="50" r="32" fill="#cbd5e1" />
-  <!-- Inner Reflective Ring -->
-  <circle cx="50" cy="50" r="18" fill="#94a3b8" />
-  <!-- Clear Center Hole -->
-  <circle cx="50" cy="50" r="10" fill="#0f172a" />
-</svg>"""
-
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    return Response(content=FAVICON_SVG, media_type="image/svg+xml")
+# MARK: Event Triggers
 
 @app.on_event("startup")
 async def startup_event():
-    ensure_makemkv_key(config.makemkv_key)
+    ensure_makemkv_key(config.makemkv_key, selection_rule=config.makemkv_preset.track_selection)
+
+# MARK: API
 
 @app.get("/api/health")
 def healthcheck():
@@ -58,6 +46,24 @@ async def scan_disc():
             status_code=400,
             detail=f"MakeMKV Key Error: {str(e)}"
         )
+
+# MARK: Web UI
+
+# SVG Favicon endpoint (Optical Disc Icon)
+FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Outer Indigo Circle -->
+  <circle cx="50" cy="50" r="48" fill="#4f46e5" />
+  <!-- Shiny Disc Body -->
+  <circle cx="50" cy="50" r="32" fill="#cbd5e1" />
+  <!-- Inner Reflective Ring -->
+  <circle cx="50" cy="50" r="18" fill="#94a3b8" />
+  <!-- Clear Center Hole -->
+  <circle cx="50" cy="50" r="10" fill="#0f172a" />
+</svg>"""
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(content=FAVICON_SVG, media_type="image/svg+xml")
 
 # Serve Static Frontend Files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

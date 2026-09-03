@@ -18,7 +18,7 @@ def get_key_warning_message(reason: str) -> str:
         "Set 'MAKEMKV_KEY=your_key_here' in your Dockge environment variables."
     )
 
-def ensure_makemkv_key(key: str = "") -> bool:    
+def ensure_makemkv_key(key: str = "", selection_rule: str = "") -> bool:
     if not key:
         logger.warning(
             "\n----------------------------------------------------------------------\n"
@@ -28,10 +28,18 @@ def ensure_makemkv_key(key: str = "") -> bool:
         )
         return False
 
+    
+    settings_dir = os.path.expanduser("~/.makemkv")
+    os.makedirs(settings_dir, exist_ok=True)
+    conf_file = os.path.join(settings_dir, "settings.conf")
+
+    lines = []
+    if key:
+        lines.append(f'app_Key = "{key}"')
+    if selection_rule:
+        lines.append(f'app_DefaultSelectionString = "{selection_rule}"')
+
     try:
-        settings_dir = os.path.expanduser("~/.makemkv")
-        os.makedirs(settings_dir, exist_ok=True)
-        conf_file = os.path.join(settings_dir, "settings.conf")
         with open(conf_file, "w") as f:
             f.write(f'app_Key = "{key}"\n')
         logger.info("MakeMKV registration key written to settings.conf.")

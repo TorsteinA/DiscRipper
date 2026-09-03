@@ -25,9 +25,9 @@
 - [x] Catch `MakeMKVKeyError` in `app/main.py` and return HTTP 400 JSON response.
 - [x] Verify key test scenarios in Dockge (valid, missing, invalid key).
 - [x] Create minimal Single Page Application (`app/static/index.html`) served directly by FastAPI.
-- [ ] Make Result and Config typed objects, so I can check properties properly rather than by string matching.
+- [x] Make Result and Config typed objects, so I can check properties properly rather than by string matching.
+- [x] Define MakeMKV presets and options in `app/config.py`.
 - [ ] Define HandBrake presets and options in `app/config.py`.
-- [ ] Define MakeMKV presets and options in `app/config.py`.
 - [ ] Add presets to SPA
 
 ## Phase 4: Transcoding Engine & Hardware Verification
