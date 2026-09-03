@@ -1,5 +1,6 @@
 import asyncio
 import re
+import os
 import shutil
 import logging
 
@@ -13,8 +14,16 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> dict:
         "label": "",
         "disc_type": "unknown",
         "title_count": 0,
-        "drive": drive_path
+        "drive": drive_path,
+        "drive_connected": False
     }
+
+    # Fail fast and clean if the physical drive is powered off / disconnected
+    if not os.path.exists(drive_path):
+        logger.info(f"Drive path {drive_path} not found. Drive is powered off or disconnected.")
+        return result
+
+    result["drive_connected"] = True
 
     # Step 1: Fast volume label check via blkid
     logger.debug(f"Executing blkid for drive: {drive_path}")

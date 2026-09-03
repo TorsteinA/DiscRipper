@@ -142,8 +142,10 @@
                 data.label,
               );
             }
-          } else {
+          } else if (data.drive_connected) {
             info.innerHTML = `<span class="text-amber-400">No disc detected in ${data.drive}</span>`;
+          } else {
+            info.innerHTML = `<span class="text-amber-400">No disc drive detected at ${data.drive}</span>`;
           }
         } catch (err) {
           banner.textContent = "Network error during drive scan.";
