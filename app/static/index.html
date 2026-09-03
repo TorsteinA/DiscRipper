@@ -66,6 +66,7 @@
             class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
           />
         </div>
+
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1"
             >Year</label
@@ -77,6 +78,7 @@
             class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
           />
         </div>
+
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1"
             >Media Type</label
@@ -90,10 +92,32 @@
             <option value="movie_extra">Movie Extra</option>
           </select>
         </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1"
+            >HandBrake Preset</label
+          >
+          <select
+            id="presetSelect"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+          >
+            <option value="">Loading presets...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- MakeMKV Rule Summary -->
+      <div
+        id="mkvPresetInfo"
+        class="p-3 bg-slate-900/60 rounded-lg border border-slate-800 text-xs text-slate-400"
+      >
+        Loading MakeMKV track rules...
       </div>
     </section>
 
     <script>
+      let availablePresets = {};
+
       function toTitleCase(str) {
         if (!str) return "";
         return str
@@ -102,6 +126,34 @@
           .split(" ")
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" ");
+      }
+
+      async function loadPresets() {
+        try {
+          const res = await fetch("/api/presets");
+          if (!res.ok) throw new Error("Failed to load presets");
+          const data = await res.json();
+
+          availablePresets = data.handbrake;
+          const select = document.getElementById("presetSelect");
+          select.innerHTML = "";
+
+          Object.keys(availablePresets).forEach((key) => {
+            const preset = availablePresets[key];
+            const option = document.createElement("option");
+            option.value = key;
+            option.textContent = preset.name;
+            select.appendChild(option);
+          });
+
+          const mkv = data.makemkv;
+          document.getElementById("mkvPresetInfo").innerHTML = `
+            <strong>MakeMKV Selection Rule:</strong> ${mkv.name}<br>
+            <span class="text-slate-400">Min Title Length: ${mkv.min_length_seconds}s | Languages: ${mkv.languages.join(", ")}</span>
+          `;
+        } catch (err) {
+          console.error(err);
+        }
       }
 
       async function scanDrive() {
@@ -142,6 +194,17 @@
                 data.label,
               );
             }
+
+            // Auto-select corresponding HandBrake preset based on disc type
+            const select = document.getElementById("presetSelect");
+            if (data.disc_type === "DVD" && availablePresets["dvd"]) {
+              select.value = "dvd";
+            } else if (
+              data.disc_type === "Blu-ray" &&
+              availablePresets["bluray"]
+            ) {
+              select.value = "bluray";
+            }
           } else if (data.drive_connected) {
             info.innerHTML = `<span class="text-amber-400">No disc detected in ${data.drive}</span>`;
           } else {
@@ -155,6 +218,9 @@
           btn.textContent = "Scan Drive";
         }
       }
+
+      // Load presets when script runs
+      loadPresets();
     </script>
   </body>
 </html>

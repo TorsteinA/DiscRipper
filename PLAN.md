@@ -42,6 +42,8 @@
 
 - [ ] Display whether drive is available and react to drive being connected/disconnected.
 - [ ] Stream real-time stdout progress parsing to the Web UI via WebSockets.
+      I think multiple progress bars makes sense,
+      to show the whole pipeline and where within it we are currently at.
 
 ## Phase 6: QoL improvements
 
