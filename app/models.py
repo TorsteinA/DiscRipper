@@ -1,6 +1,6 @@
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import Optional, List, Dict
 from app.models import MakeMKVPreset
 
 
@@ -30,6 +30,7 @@ class AppConfig:
     min_length: int = 1200
     makemkv_key: str = ""
     makemkv_preset: MakeMKVPreset = field(default_factory=MakeMKVPreset)
+    handbrake_presets: Dict[str, HandBrakePreset] = field(default_factory=dict)
 
 
 def build_makemkv_selection_string(languages: List[str]) -> str:
@@ -52,3 +53,38 @@ class MakeMKVPreset:
     @property
     def track_selection(self) -> str:
         return build_makemkv_selection_string(self.languages)
+
+@dataclass
+class HandBrakePreset:
+    name: str
+    encoder: str
+    quality: int
+    encoder_preset: str
+    decomb: bool = False
+    audio_languages: List[str] = field(default_factory=lambda: ["eng", "nor", "nob", "nno", "jpn"])
+    audio_copy_codecs: str = "ac3,eac3,dts,dtshd,truehd,flac,aac"
+    
+    def to_cli_args(self) -> List[str]:
+        """Generates the command-line flags for HandBrakeCLI."""
+        args = [
+            "-e", self.encoder,
+            "-q", str(self.quality),
+            "--encoder-preset", self.encoder_preset,
+            "--format", "av_mkv",
+            "--markers",
+        ]
+        
+        if self.decomb:
+            args.extend(["--comb-detect", "--decomb"])
+            
+        if self.audio_languages:
+            args.extend([
+                "--audio-lang-list", ",".join(self.audio_languages),
+                "--all-audio",
+                "--aencoder", f"copy:{self.audio_copy_codecs}",
+                "--audio-fallback", "av_aac",
+                "--subtitle-lang-list", ",".join(self.audio_languages),
+                "--all-subtitles"
+            ])
+            
+        return args

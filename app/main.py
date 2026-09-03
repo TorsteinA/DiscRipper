@@ -47,6 +47,13 @@ async def scan_disc():
             detail=f"MakeMKV Key Error: {str(e)}"
         )
 
+@app.get("/api/presets")
+def get_presets():
+    return {
+        "handbrake": {k: asdict(v) for k, v in config.handbrake_presets.items()},
+        "makemkv": asdict(config.makemkv_preset)
+    }
+
 # MARK: Web UI
 
 # SVG Favicon endpoint (Optical Disc Icon)

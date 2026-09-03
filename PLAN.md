@@ -27,7 +27,7 @@
 - [x] Create minimal Single Page Application (`app/static/index.html`) served directly by FastAPI.
 - [x] Make Result and Config typed objects, so I can check properties properly rather than by string matching.
 - [x] Define MakeMKV presets and options in `app/config.py`.
-- [ ] Define HandBrake presets and options in `app/config.py`.
+- [x] Define HandBrake presets and options in `app/config.py`.
 - [ ] Add presets to SPA
 
 ## Phase 4: Transcoding Engine & Hardware Verification
@@ -47,3 +47,4 @@
 
 - [ ] Add simple notification/chime on failure and completion.
 - [ ] When disk is detected, look-up autofilled title to suggest year.
+- [ ] Before starting actual ripping process, do say ie "Expected time: 6-10 hours" with a rough estimate based on file size and preset.
