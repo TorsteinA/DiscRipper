@@ -1,7 +1,10 @@
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
+DEFAULT_TARGET_LANGUAGES: List[str] = ["eng", "jpn", "nor", "nob", "nno"]
 
 class DiscType(str, Enum):
     UNKNOWN = "unknown"
@@ -30,7 +33,7 @@ def build_makemkv_selection_string(languages: List[str]) -> str:
 class MakeMKVPreset:
     name: str = "Default (Movies + Extras)"
     min_length_seconds: int = 120  # 2 minutes: captures extras, drops short menus/logos
-    languages: List[str] = field(default_factory=lambda: ["eng", "jpn", "nor", "nob", "nno"])
+    languages: List[str] = field(default_factory=lambda: list(DEFAULT_TARGET_LANGUAGES))
 
     @property
     def track_selection(self) -> str:
@@ -43,7 +46,7 @@ class HandBrakePreset:
     quality: int
     encoder_preset: str
     decomb: bool = False
-    audio_languages: List[str] = field(default_factory=lambda: ["eng", "nor", "nob", "nno", "jpn"])
+    audio_languages: List[str] = field(default_factory=lambda: list(DEFAULT_TARGET_LANGUAGES))
     audio_copy_codecs: str = "ac3,eac3,dts,dtshd,truehd,flac,aac"
     
     def to_cli_args(self) -> List[str]:
@@ -97,12 +100,16 @@ class ScanResult:
     error: Optional[str] = None
 
 
-@dataclass
-class AppConfig:
+class AppSettings(BaseSettings):
     drive_path: str = "/dev/sr0"
+    data_dir: str = "/data"
     temp_dir: str = "/tmp/ripper"
-    output_dir: str = "/media/library"
-    min_length: int = 1200
+    output_dir_movies: str = "/media/movies"
+    output_dir_shows: str = "/media/shows"
     makemkv_key: str = ""
-    makemkv_preset: MakeMKVPreset = field(default_factory=MakeMKVPreset)
-    handbrake_presets: Dict[str, HandBrakePreset] = field(default_factory=dict)
+    makemkv_languages: List[str] = Field(default_factory=lambda: list(DEFAULT_TARGET_LANGUAGES))
+    min_length_seconds: int = 120
+
+    # Populated programmatically in load_config()
+    makemkv_preset: MakeMKVPreset = Field(default_factory=MakeMKVPreset)
+    handbrake_presets: Dict[str, HandBrakePreset] = Field(default_factory=dict)

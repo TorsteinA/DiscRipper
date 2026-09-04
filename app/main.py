@@ -57,7 +57,7 @@ def get_presets():
 
 @app.get("/api/history")
 def get_ripping_history():
-    return load_history(config.output_dir)
+    return load_history(config.data_dir)
 
 # MARK: Web UI
 

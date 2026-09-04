@@ -34,6 +34,8 @@
 
 - [x] Verify QuickSync H.264 (`qsv_h264`) hardware acceleration on host GPU.
 - [x] System for storing ripping history and showing it in the WebUI
+- [x] Fix proper paths for the things we want.
+      `compose.yaml` should probably forward the folders for Movies, Shows, and appdata.
 - [ ] Add `app/ripper.py` for `makemkvcon` extraction
 - [ ] Add `HandBrakeCLI` processing for compression
 - [ ] Verify correct creation of output directory and file name.
