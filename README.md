@@ -19,10 +19,15 @@ services:
     ports:
       - 8095:8000
     environment:
-      - MAKEMKV_KEY=[key here]
+      - MAKEMKV_KEY=[key-id]
     volumes:
+      # Hardware mapping
       - /dev:/dev:ro # Read-only access to host device trees
       - /dev/dri:/dev/dri # Keep direct GPU access for QuickSync
+      # Storage mapping
+      - /appdata/discripper/data:/data # peristent storage
+      - /srv/dev-disk-by-uuid-[id]/JellyfinMedia/Movies:/media/movies
+      - /srv/dev-disk-by-uuid-[id]/JellyfinMedia/Shows:/media/shows
     group_add:
       - "24" # host cdrom group
       - "44" # host render/video group
