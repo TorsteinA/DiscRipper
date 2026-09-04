@@ -115,6 +115,31 @@
       </div>
     </section>
 
+    <!-- Ripping History Card -->
+    <section
+      class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-3"
+    >
+      <div class="flex items-center justify-between">
+        <h2
+          class="text-xs font-semibold uppercase tracking-wider text-slate-400"
+        >
+          Ripping History
+        </h2>
+        <button
+          onclick="loadHistory()"
+          class="text-xs text-indigo-400 hover:text-indigo-300"
+        >
+          Refresh
+        </button>
+      </div>
+      <div
+        id="historyList"
+        class="text-xs text-slate-300 divide-y divide-slate-800"
+      >
+        <span class="text-slate-500">No previous rip jobs recorded.</span>
+      </div>
+    </section>
+
     <script>
       let availablePresets = {};
 
@@ -218,6 +243,80 @@
           btn.textContent = "Scan Drive";
         }
       }
+
+      function formatDuration(startTimeStr, endTimeStr) {
+        if (!startTimeStr || !endTimeStr) return null;
+
+        const start = new Date(startTimeStr);
+        const end = new Date(endTimeStr);
+        const diffMs = end - start;
+
+        if (isNaN(diffMs) || diffMs < 0) return null;
+
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+
+        if (hours > 0) {
+          return `${hours}h ${minutes}m`;
+        } else if (minutes > 0) {
+          return `${minutes}m ${seconds}s`;
+        }
+        return `${seconds}s`;
+      }
+
+      async function loadHistory() {
+        try {
+          const res = await fetch("/api/history");
+          if (!res.ok) return;
+          const items = await res.json();
+          const container = document.getElementById("historyList");
+
+          if (items.length === 0) {
+            container.innerHTML =
+              '<span class="text-slate-500">No previous rip jobs recorded.</span>';
+            return;
+          }
+
+          container.innerHTML = items
+            .map((item) => {
+              const duration = formatDuration(item.start_time, item.end_time);
+
+              return `
+                <div class="py-2.5 flex items-center justify-between">
+                <div class="space-y-0.5">
+                    <div class="flex items-center space-x-2">
+                    <span class="font-medium text-slate-200">${item.title}</span>
+                    ${item.year ? `<span class="text-slate-400 text-xs">(${item.year})</span>` : ""}
+                    </div>
+                    <div class="text-[11px] text-slate-500 flex items-center space-x-2">
+                    <span>${item.disc_type}</span>
+                    <span>&bull;</span>
+                    <span>${item.preset_used}</span>
+                    ${duration ? `<span>&bull;</span> <span class="text-slate-400">⏱️ ${duration}</span>` : ""}
+                    </div>
+                </div>
+                <div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${
+                      item.status === "COMPLETED"
+                        ? "bg-emerald-900/60 text-emerald-300 border border-emerald-700"
+                        : item.status === "FAILED"
+                          ? "bg-rose-900/60 text-rose-300 border border-rose-700"
+                          : "bg-indigo-900/60 text-indigo-300 border border-indigo-700"
+                    }">${item.status}</span>
+                </div>
+                </div>
+            `;
+            })
+            .join("");
+        } catch (err) {
+          console.error("Failed to load history:", err);
+        }
+      }
+
+      // Load history on boot
+      loadHistory();
 
       // Load presets when script runs
       loadPresets();

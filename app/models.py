@@ -9,6 +9,11 @@ class DiscType(str, Enum):
     BLU_RAY = "Blu-ray"
     OPTICAL_MEDIA = "Optical Media"
 
+class RippingStatus(str, Enum):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
 
 def build_makemkv_selection_string(languages: List[str]) -> str:
     """
@@ -65,6 +70,20 @@ class HandBrakePreset:
             ])
             
         return args
+
+
+@dataclass
+class RipHistoryItem:
+    id: str
+    title: str
+    year: Optional[str]
+    media_type: str
+    disc_type: DiscType
+    preset_used: str
+    start_time: str
+    end_time: Optional[str] = None
+    status: RippingStatus = RippingStatus.IN_PROGRESS
+    error: Optional[str] = None
 
 
 @dataclass

@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from app.config import load_config
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
+from app.history import load_history
 
 # Configure structured console logging
 logging.basicConfig(
@@ -53,6 +54,10 @@ def get_presets():
         "handbrake": {k: asdict(v) for k, v in config.handbrake_presets.items()},
         "makemkv": asdict(config.makemkv_preset)
     }
+
+@app.get("/api/history")
+def get_ripping_history():
+    return load_history(config.output_dir)
 
 # MARK: Web UI
 

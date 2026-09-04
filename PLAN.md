@@ -28,12 +28,12 @@
 - [x] Make Result and Config typed objects, so I can check properties properly rather than by string matching.
 - [x] Define MakeMKV presets and options in `app/config.py`.
 - [x] Define HandBrake presets and options in `app/config.py`.
-- [ ] Add presets to SPA
+- [x] Add presets to SPA
 
 ## Phase 4: Transcoding Engine & Hardware Verification
 
-- [ ] Verify QuickSync H.264 (`qsv_h264`) hardware acceleration on host GPU.
-- [ ] System for storing ripping history and showing it in the WebUI
+- [x] Verify QuickSync H.264 (`qsv_h264`) hardware acceleration on host GPU.
+- [x] System for storing ripping history and showing it in the WebUI
 - [ ] Add `app/ripper.py` for `makemkvcon` extraction
 - [ ] Add `HandBrakeCLI` processing for compression
 - [ ] Verify correct creation of output directory and file name.
