@@ -147,8 +147,16 @@
         Loading MakeMKV track rules...
       </div>
 
-      <!-- Dry Run Btn -->
+      <!-- Action Buttons -->
       <div class="flex items-center space-x-3 pt-2">
+        <button
+          type="button"
+          onclick="startExtraction()"
+          id="ripBtn"
+          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold text-white transition shadow-sm"
+        >
+          Start Extraction (Stage 2)
+        </button>
         <button
           type="button"
           onclick="performDryRun()"
@@ -269,6 +277,67 @@
         } finally {
           btn.disabled = false;
           btn.textContent = "Dry Run Config";
+        }
+      }
+
+      async function startExtraction() {
+        const ripBtn = document.getElementById("ripBtn");
+        const dryBtn = document.getElementById("dryRunBtn");
+        const title = document.getElementById("titleInput").value.trim();
+        const year = document.getElementById("yearInput").value.trim();
+        const mediaType = document.getElementById("mediaTypeSelect").value;
+        const presetKey = document.getElementById("presetSelect").value;
+        const season =
+          parseInt(document.getElementById("seasonInput").value, 10) || 1;
+        const episode =
+          parseInt(document.getElementById("episodeInput").value, 10) || 1;
+        const banner = document.getElementById("errorBanner");
+
+        if (!title || !year) {
+          banner.textContent =
+            "Please provide both a Title and a Year before starting extraction.";
+          banner.classList.remove("hidden");
+          return;
+        }
+
+        ripBtn.disabled = true;
+        dryBtn.disabled = true;
+        ripBtn.textContent = "Extracting Disc...";
+        banner.classList.add("hidden");
+
+        try {
+          const res = await fetch("/api/test-extract", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: title,
+              year: year,
+              media_type: mediaType,
+              preset_key: presetKey,
+              season: season,
+              episode: episode,
+            }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            banner.textContent = data.detail || "Extraction failed.";
+            banner.classList.remove("hidden");
+            return;
+          }
+
+          alert(
+            `Stage 2 Complete!\n\nJob ID: ${data.job_id}\nStaging Dir: ${data.staging_dir}\nExtracted Files: ${data.extracted_files.length}`,
+          );
+
+          loadHistory();
+        } catch (err) {
+          banner.textContent = "Network error during extraction.";
+          banner.classList.remove("hidden");
+        } finally {
+          ripBtn.disabled = false;
+          dryBtn.disabled = false;
+          ripBtn.textContent = "Start Extraction (Stage 2)";
         }
       }
 

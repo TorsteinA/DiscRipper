@@ -41,13 +41,14 @@
   - Ensure we get correct CLI args for MakeMKV
   - Ensure we get correct CLI args for Handbrake
   - Ensure we get correct file names and output paths.
-  - [ ] for Movies
-  - [ ] for Movie Extras
-  - [ ] for Shows -> Probably needs Web UI update to also supply season and first episode on disk, if chosen media type is Show.
+  - [x] for Movies
+  - [x] for Movie Extras
+  - [x] for Shows
   - At this stage, just printing it is probably sufficient
-- [ ] Add `app/ripper.py` for `makemkvcon` extraction
-- [ ] Add `HandBrakeCLI` processing for compression
+- [ ] Stage 2: Add `app/ripper.py` for `makemkvcon` extraction
+- [ ] Stage 3: Add `HandBrakeCLI` processing for compression
 - [ ] Verify correct creation of output directory and file name.
+- [ ] Stage 4: delete temp folder if everything went well. These files are huge, so don't want to keep them around unnecessarily
 
 ## Phase 5: Real-time Progress & WebSockets
 

@@ -1,6 +1,7 @@
 import os
 import logging
 from dataclasses import asdict
+import uuid
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import FastAPI, Response, HTTPException
@@ -10,7 +11,8 @@ from app.config import load_config
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
 from app.history import get_history_entry_count, load_history
-from app.models import MediaType
+from app.mkv import extract_disc_titles, write_job_manifest
+from app.models import DryRunRequest, ExtractionTestRequest, MediaType
 from app.paths import get_disc_output_path, get_target_output_path
 
 # Configure structured console logging
@@ -94,15 +96,6 @@ async def read_index():
     return {"message": "Disc Ripper API running."}
 
 
-class DryRunRequest(BaseModel):
-    title: str
-    year: str
-    media_type: MediaType = MediaType.Movie
-    preset_key: str = "dvd"
-    season: int = 1
-    episode: int = 1
-
-
 @app.post("/api/dry-run")
 def dry_run_job_configuration(req: DryRunRequest):
     preset = config.handbrake_presets.get(req.preset_key)
@@ -157,3 +150,38 @@ def dry_run_job_configuration(req: DryRunRequest):
         "makemkv_cmd": makemkv_cmd,
         "handbrake_cmd_template": handbrake_cmd_template
     }
+
+
+@app.post("/api/test-extract")
+async def test_extraction(req: ExtractionTestRequest):
+    job_id = f"job_{str(uuid.uuid4())[:8]}"
+    staging_dir = os.path.join(config.temp_dir, job_id)
+
+    try:
+        # 1. Write job manifest
+        write_job_manifest(
+            staging_dir=staging_dir,
+            job_id=job_id,
+            title=req.title,
+            year=req.year,
+            media_type=req.media_type,
+            disc_type=req.disc_type,
+            preset_key=req.preset_key,
+            season=req.season,
+            episode=req.episode
+        )
+
+        # 2. Perform live disc extraction
+        extracted_files = await extract_disc_titles(config, staging_dir)
+
+        return {
+            "status": "ok",
+            "job_id": job_id,
+            "staging_dir": staging_dir,
+            "manifest_path": os.path.join(staging_dir, "job.json"),
+            "extracted_files": extracted_files
+        }
+
+    except Exception as e:
+        logger.exception(f"Extraction failed for {req.title}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
