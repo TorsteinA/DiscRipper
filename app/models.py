@@ -1,8 +1,9 @@
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
-from pydantic import Field
 from pydantic_settings import BaseSettings
+from datetime import datetime
+from pydantic import BaseModel, Field
 
 DEFAULT_TARGET_LANGUAGES: List[str] = ["eng", "jpn", "nor", "nob", "nno"]
 
@@ -18,9 +19,11 @@ class MediaType(str, Enum):
     MovieExtras = 'movie extras'
 
 class RippingStatus(str, Enum):
-    IN_PROGRESS = "IN_PROGRESS"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
+    EXTRACTING = "EXTRACTING"      # Stage 2: makemkvcon reading optical media
+    EXTRACTED = "EXTRACTED"        # Staged in /tmp/ripper/job_<id>/ awaiting transcode
+    COMPRESSING = "COMPRESSING"    # Stage 3: HandBrakeCLI active
+    COMPLETED = "COMPLETED"        # Final MKV placed in Jellyfin library
+    FAILED = "FAILED"              # Pipeline error encountered
 
 
 def build_makemkv_selection_string(languages: List[str]) -> str:
@@ -91,8 +94,38 @@ class RipHistoryItem:
     preset_used: str
     start_time: str
     end_time: Optional[str] = None
-    status: RippingStatus = RippingStatus.IN_PROGRESS
+    status: RippingStatus = RippingStatus.EXTRACTING
     error: Optional[str] = None
+
+
+class DryRunRequest(BaseModel):
+    title: str
+    year: str
+    media_type: MediaType = MediaType.Movie
+    preset_key: str = "dvd"
+    season: int = 1
+    episode: int = 1
+
+class ExtractionTestRequest(BaseModel):
+    title: str
+    year: str
+    media_type: MediaType = MediaType.Movie
+    preset_key: str = "dvd"
+    disc_type: DiscType = DiscType.DVD
+    season: int = 1
+    episode: int = 1
+
+class JobManifest(BaseModel):
+    job_id: str
+    title: str
+    year: str
+    media_type: MediaType
+    disc_type: DiscType
+    preset_key: str
+    season: int = 1
+    episode: int = 1
+    status: str = "RIPPED"
+    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 @dataclass

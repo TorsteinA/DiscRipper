@@ -1,16 +1,18 @@
+from datetime import datetime
 import os
 import logging
 from dataclasses import asdict
-from pydantic import BaseModel
-from typing import Optional
-from fastapi import FastAPI, Response, HTTPException
+import uuid
+from fastapi import BackgroundTasks, FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.config import load_config
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
-from app.history import get_history_entry_count, load_history
-from app.models import MediaType
+from app.history import append_history_item, update_history_item, load_history
+from app.models import RipHistoryItem, RippingStatus
+from app.mkv import extract_disc_titles, write_job_manifest
+from app.models import AppSettings, DryRunRequest, ExtractionTestRequest
 from app.paths import get_disc_output_path, get_target_output_path
 
 # Configure structured console logging
@@ -94,15 +96,6 @@ async def read_index():
     return {"message": "Disc Ripper API running."}
 
 
-class DryRunRequest(BaseModel):
-    title: str
-    year: str
-    media_type: MediaType = MediaType.Movie
-    preset_key: str = "dvd"
-    season: int = 1
-    episode: int = 1
-
-
 @app.post("/api/dry-run")
 def dry_run_job_configuration(req: DryRunRequest):
     preset = config.handbrake_presets.get(req.preset_key)
@@ -156,4 +149,65 @@ def dry_run_job_configuration(req: DryRunRequest):
         "sample_output_file": sample_target_file,
         "makemkv_cmd": makemkv_cmd,
         "handbrake_cmd_template": handbrake_cmd_template
+    }
+
+async def run_extraction_task(config: AppSettings, job_id: str, staging_dir: str):
+    """Background execution wrapper for makemkvcon with history state tracking."""
+    try:
+        files = await extract_disc_titles(config, staging_dir)
+        logger.info(f"Background extraction complete for {staging_dir}. Extracted {len(files)} files.")
+        
+        # Transition state to EXTRACTED (ready for Stage 3 batch compression)
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.EXTRACTED,
+        )
+    except Exception as e:
+        logger.exception(f"Background extraction failed for {staging_dir}: {e}")
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.FAILED,
+            end_time=datetime.now().isoformat(),
+            error=str(e)
+        )
+
+@app.post("/api/test-extract", status_code=202)
+async def test_extraction(req: ExtractionTestRequest, background_tasks: BackgroundTasks):
+    job_id = f"job_{str(uuid.uuid4())[:8]}"
+    staging_dir = os.path.join(config.temp_dir, job_id)
+    preset = config.handbrake_presets.get(req.preset_key)
+
+    write_job_manifest(
+        staging_dir=staging_dir,
+        job_id=job_id,
+        title=req.title,
+        year=req.year,
+        media_type=req.media_type,
+        disc_type=req.disc_type,
+        preset_key=req.preset_key,
+        season=req.season,
+        episode=req.episode
+    )
+
+    initial_history = RipHistoryItem(
+        id=job_id,
+        title=req.title,
+        year=req.year,
+        media_type=req.media_type,
+        disc_type=req.disc_type,
+        preset_used=preset.name if preset else req.preset_key,
+        start_time=datetime.now().isoformat(),
+        status=RippingStatus.EXTRACTING
+    )
+    append_history_item(config.data_dir, initial_history)
+
+    # 3. Dispatch extraction task
+    background_tasks.add_task(run_extraction_task, config, job_id, staging_dir)
+
+    return {
+        "status": "started",
+        "job_id": job_id,
+        "staging_dir": staging_dir
     }
