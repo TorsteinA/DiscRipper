@@ -85,11 +85,12 @@
           >
           <select
             id="mediaTypeSelect"
+            onchange="toggleTvFields()"
             class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
           >
             <option value="movie">Movie</option>
-            <option value="tv">TV Show</option>
-            <option value="movie_extra">Movie Extra</option>
+            <option value="show">TV Show</option>
+            <option value="movie extras">Movie Extra</option>
           </select>
         </div>
 
@@ -106,6 +107,38 @@
         </div>
       </div>
 
+      <!-- Conditional TV Show Fields -->
+      <div
+        id="tvFields"
+        class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/80"
+      >
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1"
+            >Season Number</label
+          >
+          <input
+            type="number"
+            id="seasonInput"
+            min="1"
+            value="1"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1"
+            >First Episode on Disc</label
+          >
+          <input
+            type="number"
+            id="episodeInput"
+            min="1"
+            value="1"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+      </div>
+
       <!-- MakeMKV Rule Summary -->
       <div
         id="mkvPresetInfo"
@@ -114,15 +147,15 @@
         Loading MakeMKV track rules...
       </div>
 
-      <!-- Temporary Path test button -->
+      <!-- Dry Run Btn -->
       <div class="flex items-center space-x-3 pt-2">
         <button
           type="button"
-          onclick="testRipConfig()"
-          id="testBtn"
+          onclick="performDryRun()"
+          id="dryRunBtn"
           class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-medium transition text-slate-200"
         >
-          Test Rip Config (Dry Run)
+          Dry Run
         </button>
       </div>
     </section>
@@ -165,52 +198,77 @@
           .join(" ");
       }
 
-      async function testRipConfig() {
-        const btn = document.getElementById("testBtn");
+      function toggleTvFields() {
+        const mediaType = document.getElementById("mediaTypeSelect").value;
+        const tvFields = document.getElementById("tvFields");
+
+        if (mediaType === "show") {
+          tvFields.classList.remove("hidden");
+        } else {
+          tvFields.classList.add("hidden");
+        }
+      }
+
+      async function performDryRun() {
+        const btn = document.getElementById("dryRunBtn");
         const title = document.getElementById("titleInput").value.trim();
         const year = document.getElementById("yearInput").value.trim();
         const mediaType = document.getElementById("mediaTypeSelect").value;
         const presetKey = document.getElementById("presetSelect").value;
+        const season =
+          parseInt(document.getElementById("seasonInput").value, 10) || 1;
+        const episode =
+          parseInt(document.getElementById("episodeInput").value, 10) || 1;
         const banner = document.getElementById("errorBanner");
 
         if (!title) {
-          banner.textContent = "Please provide a title before testing.";
+          banner.textContent =
+            "Please provide a title before running a dry run.";
+          banner.classList.remove("hidden");
+          return;
+        }
+        if (!year) {
+          banner.textContent =
+            "Please provide a year before running a dry run.";
           banner.classList.remove("hidden");
           return;
         }
 
         btn.disabled = true;
-        btn.textContent = "Testing...";
+        btn.textContent = "Inspecting...";
         banner.classList.add("hidden");
 
         try {
-          const res = await fetch("/api/test-job", {
+          const res = await fetch("/api/dry-run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               title: title,
-              year: year || null,
+              year: year,
               media_type: mediaType,
               preset_key: presetKey,
+              season: season,
+              episode: episode,
             }),
           });
 
           const data = await res.json();
           if (!res.ok) {
-            banner.textContent = data.detail || "Test failed";
+            banner.textContent = data.detail || "Dry run failed";
             banner.classList.remove("hidden");
             return;
           }
 
+          console.log("Dry Run Output:", data);
           alert(
-            `Dry Run Success!\nPlaceholder created at:\n${data.placeholder_path}\n\nCheck Dockge terminal logs for full CLI args.`,
+            `Dry Run Complete!\n\nTarget Dir:\n${data.target_directory}\n\nSample Output:\n${data.sample_output_file}`,
           );
         } catch (err) {
-          banner.textContent = "Network error during test job.";
+          banner.textContent = "Network error during dry run.";
           banner.classList.remove("hidden");
         } finally {
           btn.disabled = false;
-          btn.textContent = "Test Rip Config (Dry Run)";
+          btn.textContent = "Dry Run Config";
         }
       }
 

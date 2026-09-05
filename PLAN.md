@@ -36,7 +36,15 @@
 - [x] System for storing ripping history and showing it in the WebUI
 - [x] Fix proper paths for the things we want, from compose-yaml to the container.
       `compose.yaml` should probably forward the folders for Movies, Shows, and appdata.
-- [ ] Get from Form input to the outputs we need. - Ensure we get correct file names and output paths. - Ensure we get correct CLI args for MakeMKV - Ensure we get correct CLI args for Handbrake - At this stage, just printing it is probably sufficient
+- [ ] Get from Form input to the outputs we need.
+  - [x] Ensure we have permissions to write files.
+  - Ensure we get correct CLI args for MakeMKV
+  - Ensure we get correct CLI args for Handbrake
+  - Ensure we get correct file names and output paths.
+  - [ ] for Movies
+  - [ ] for Movie Extras
+  - [ ] for Shows -> Probably needs Web UI update to also supply season and first episode on disk, if chosen media type is Show.
+  - At this stage, just printing it is probably sufficient
 - [ ] Add `app/ripper.py` for `makemkvcon` extraction
 - [ ] Add `HandBrakeCLI` processing for compression
 - [ ] Verify correct creation of output directory and file name.

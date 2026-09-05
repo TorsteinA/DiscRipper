@@ -12,6 +12,11 @@ class DiscType(str, Enum):
     BLU_RAY = "Blu-ray"
     OPTICAL_MEDIA = "Optical Media"
 
+class MediaType(str, Enum):
+    Movie = 'movie'
+    Show = 'show'
+    MovieExtras = 'movie extras'
+
 class RippingStatus(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -63,12 +68,13 @@ class HandBrakePreset:
             args.extend(["--comb-detect", "--decomb"])
             
         if self.audio_languages:
+            langs = ",".join(self.audio_languages)
             args.extend([
-                "--audio-lang-list", ",".join(self.audio_languages),
+                "--audio-lang-list", langs,
                 "--all-audio",
                 "--aencoder", f"copy:{self.audio_copy_codecs}",
-                "--audio-fallback", "av_aac",
-                "--subtitle-lang-list", ",".join(self.audio_languages),
+                "--audio-fallback", "aac",
+                "--subtitle-lang-list", langs,
                 "--all-subtitles"
             ])
             
@@ -80,7 +86,7 @@ class RipHistoryItem:
     id: str
     title: str
     year: Optional[str]
-    media_type: str
+    media_type: MediaType
     disc_type: DiscType
     preset_used: str
     start_time: str

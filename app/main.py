@@ -9,8 +9,9 @@ from fastapi.responses import FileResponse
 from app.config import load_config
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
-from app.history import load_history
-from app.paths import get_target_output_path
+from app.history import get_history_entry_count, load_history
+from app.models import MediaType
+from app.paths import get_disc_output_path, get_target_output_path
 
 # Configure structured console logging
 logging.basicConfig(
@@ -93,58 +94,66 @@ async def read_index():
     return {"message": "Disc Ripper API running."}
 
 
-class TestJobRequest(BaseModel):
+class DryRunRequest(BaseModel):
     title: str
-    year: Optional[str] = None
-    media_type: str = "movie"
+    year: str
+    media_type: MediaType = MediaType.Movie
     preset_key: str = "dvd"
+    season: int = 1
+    episode: int = 1
 
-@app.post("/api/test-job")
-def test_job_configuration(req: TestJobRequest):
-    # 1. Resolve HandBrake Preset
+
+@app.post("/api/dry-run")
+def dry_run_job_configuration(req: DryRunRequest):
     preset = config.handbrake_presets.get(req.preset_key)
     if not preset:
         raise HTTPException(status_code=400, detail=f"Invalid preset key: '{req.preset_key}'")
 
-    # 2. Compute Output Path
-    target_mkv_path = get_target_output_path(config, req.title, req.year, req.media_type)
-    placeholder_path = target_mkv_path.replace(".mkv", "_TEST_PLACEHOLDER.txt")
+    # Compute Target Directory & Sample Output File Path using form fields
+    target_dir = get_disc_output_path(config, req.title, req.year, req.media_type, season=req.season)
+    sample_target_file = get_target_output_path(
+        config, 
+        req.title, 
+        req.year, 
+        req.media_type, 
+        season=req.season, 
+        episode=req.episode,
+        extra_num=1
+    )
 
-    # 3. Create dummy file at target host mount path to verify volume permissions
-    with open(placeholder_path, "w", encoding="utf-8") as f:
-        f.write(f"Dry-run placeholder for: {req.title}\nTarget MKV: {target_mkv_path}\n")
+    simulated_job_id = "job_sample123"
+    job_staging_dir = os.path.join(config.temp_dir, simulated_job_id)
 
-    # 4. Generate MakeMKV CLI command
     makemkv_cmd = [
         "makemkvcon",
         "-r",
         "mkv",
         f"dev:{config.drive_path}",
         "all",
-        config.temp_dir,
+        job_staging_dir,
         f"--minlength={config.makemkv_preset.min_length_seconds}",
     ]
 
-    # 5. Generate HandBrake CLI command
-    handbrake_cmd = [
+    handbrake_cmd_template = [
         "HandBrakeCLI",
-        "-i", f"{config.temp_dir}/extracted_title.mkv",
-        "-o", target_mkv_path,
+        "-i", f"{job_staging_dir}/<extracted_title>.mkv",
+        "-o", sample_target_file,
         *preset.to_cli_args()
     ]
 
-    # 6. Log output directly to Dockge container terminal
-    logger.info("=== DRY-RUN JOB VERIFICATION ===")
-    logger.info(f"Target Output File: {target_mkv_path}")
-    logger.info(f"Test Placeholder Created: {placeholder_path}")
+    logger.info("=== DRY-RUN JOB INSPECTION ===")
+    logger.info(f"Media Type: {req.media_type.value}")
+    logger.info(f"Target Directory: {target_dir}")
+    logger.info(f"Sample Output File: {sample_target_file}")
     logger.info(f"MakeMKV Command: {' '.join(makemkv_cmd)}")
-    logger.info(f"HandBrake Command: {' '.join(handbrake_cmd)}")
-    logger.info("=================================")
+    logger.info(f"HandBrake Template: {' '.join(handbrake_cmd_template)}")
+    logger.info("===============================")
 
     return {
         "status": "ok",
-        "target_mkv_path": target_mkv_path,
-        "placeholder_path": placeholder_path,
+        "job_staging_dir": job_staging_dir,
+        "target_directory": target_dir,
+        "sample_output_file": sample_target_file,
         "makemkv_cmd": makemkv_cmd,
-        "handbrake_cmd": handbrake_cmd
+        "handbrake_cmd_template": handbrake_cmd_template
     }
