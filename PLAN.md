@@ -34,8 +34,9 @@
 
 - [x] Verify QuickSync H.264 (`qsv_h264`) hardware acceleration on host GPU.
 - [x] System for storing ripping history and showing it in the WebUI
-- [x] Fix proper paths for the things we want.
+- [x] Fix proper paths for the things we want, from compose-yaml to the container.
       `compose.yaml` should probably forward the folders for Movies, Shows, and appdata.
+- [ ] Get from Form input to the outputs we need. - Ensure we get correct file names and output paths. - Ensure we get correct CLI args for MakeMKV - Ensure we get correct CLI args for Handbrake - At this stage, just printing it is probably sufficient
 - [ ] Add `app/ripper.py` for `makemkvcon` extraction
 - [ ] Add `HandBrakeCLI` processing for compression
 - [ ] Verify correct creation of output directory and file name.
@@ -46,9 +47,12 @@
 - [ ] Stream real-time stdout progress parsing to the Web UI via WebSockets.
       I think multiple progress bars makes sense,
       to show the whole pipeline and where within it we are currently at.
+      We can probably safely assume that ie starting on step 3 means step 2 is finished and can be filled up, even if the last stdout wasn't a progress=1.0
 
 ## Phase 6: QoL improvements
 
 - [ ] Add simple notification/chime on failure and completion.
 - [ ] When disk is detected, look-up autofilled title to suggest year.
-- [ ] Before starting actual ripping process, do say ie "Expected time: 6-10 hours" with a rough estimate based on file size and preset.
+      Can we do fuzzy search for more/better suggestions?
+      Or maybe we do a search on just fewer of the words if we have few hits - ie if "Harry Potter and the Philisopher's stone" gives few hits, just "Harry Potter" might get several.
+- [ ] Before starting actual ripping process, do say ie "Expected time: 6-10 hours" with a rough estimate based on file size (if known) and preset.

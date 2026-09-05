@@ -113,6 +113,18 @@
       >
         Loading MakeMKV track rules...
       </div>
+
+      <!-- Temporary Path test button -->
+      <div class="flex items-center space-x-3 pt-2">
+        <button
+          type="button"
+          onclick="testRipConfig()"
+          id="testBtn"
+          class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-medium transition text-slate-200"
+        >
+          Test Rip Config (Dry Run)
+        </button>
+      </div>
     </section>
 
     <!-- Ripping History Card -->
@@ -151,6 +163,55 @@
           .split(" ")
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" ");
+      }
+
+      async function testRipConfig() {
+        const btn = document.getElementById("testBtn");
+        const title = document.getElementById("titleInput").value.trim();
+        const year = document.getElementById("yearInput").value.trim();
+        const mediaType = document.getElementById("mediaTypeSelect").value;
+        const presetKey = document.getElementById("presetSelect").value;
+        const banner = document.getElementById("errorBanner");
+
+        if (!title) {
+          banner.textContent = "Please provide a title before testing.";
+          banner.classList.remove("hidden");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Testing...";
+        banner.classList.add("hidden");
+
+        try {
+          const res = await fetch("/api/test-job", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: title,
+              year: year || null,
+              media_type: mediaType,
+              preset_key: presetKey,
+            }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            banner.textContent = data.detail || "Test failed";
+            banner.classList.remove("hidden");
+            return;
+          }
+
+          alert(
+            `Dry Run Success!\nPlaceholder created at:\n${data.placeholder_path}\n\nCheck Dockge terminal logs for full CLI args.`,
+          );
+        } catch (err) {
+          banner.textContent = "Network error during test job.";
+          banner.classList.remove("hidden");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Test Rip Config (Dry Run)";
+        }
       }
 
       async function loadPresets() {

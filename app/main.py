@@ -1,6 +1,8 @@
 import os
 import logging
 from dataclasses import asdict
+from pydantic import BaseModel
+from typing import Optional
 from fastapi import FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -8,6 +10,7 @@ from app.config import load_config
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
 from app.history import load_history
+from app.paths import get_target_output_path
 
 # Configure structured console logging
 logging.basicConfig(
@@ -88,3 +91,60 @@ async def read_index():
     if os.path.exists(index_path):
         return FileResponse(index_path)
     return {"message": "Disc Ripper API running."}
+
+
+class TestJobRequest(BaseModel):
+    title: str
+    year: Optional[str] = None
+    media_type: str = "movie"
+    preset_key: str = "dvd"
+
+@app.post("/api/test-job")
+def test_job_configuration(req: TestJobRequest):
+    # 1. Resolve HandBrake Preset
+    preset = config.handbrake_presets.get(req.preset_key)
+    if not preset:
+        raise HTTPException(status_code=400, detail=f"Invalid preset key: '{req.preset_key}'")
+
+    # 2. Compute Output Path
+    target_mkv_path = get_target_output_path(config, req.title, req.year, req.media_type)
+    placeholder_path = target_mkv_path.replace(".mkv", "_TEST_PLACEHOLDER.txt")
+
+    # 3. Create dummy file at target host mount path to verify volume permissions
+    with open(placeholder_path, "w", encoding="utf-8") as f:
+        f.write(f"Dry-run placeholder for: {req.title}\nTarget MKV: {target_mkv_path}\n")
+
+    # 4. Generate MakeMKV CLI command
+    makemkv_cmd = [
+        "makemkvcon",
+        "-r",
+        "mkv",
+        f"dev:{config.drive_path}",
+        "all",
+        config.temp_dir,
+        f"--minlength={config.makemkv_preset.min_length_seconds}",
+    ]
+
+    # 5. Generate HandBrake CLI command
+    handbrake_cmd = [
+        "HandBrakeCLI",
+        "-i", f"{config.temp_dir}/extracted_title.mkv",
+        "-o", target_mkv_path,
+        *preset.to_cli_args()
+    ]
+
+    # 6. Log output directly to Dockge container terminal
+    logger.info("=== DRY-RUN JOB VERIFICATION ===")
+    logger.info(f"Target Output File: {target_mkv_path}")
+    logger.info(f"Test Placeholder Created: {placeholder_path}")
+    logger.info(f"MakeMKV Command: {' '.join(makemkv_cmd)}")
+    logger.info(f"HandBrake Command: {' '.join(handbrake_cmd)}")
+    logger.info("=================================")
+
+    return {
+        "status": "ok",
+        "target_mkv_path": target_mkv_path,
+        "placeholder_path": placeholder_path,
+        "makemkv_cmd": makemkv_cmd,
+        "handbrake_cmd": handbrake_cmd
+    }
