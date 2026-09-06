@@ -47,7 +47,7 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> ScanResult:
     logger.debug(f"Executing makemkvcon info on dev:{drive_path}")
     try:
         proc = await asyncio.create_subprocess_exec(
-            makemkv_path, "-r", "info", f"dev:{drive_path}",
+            makemkv_path, "-r", "info", "disc:0",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )

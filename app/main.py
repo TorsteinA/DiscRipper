@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import logging
 from dataclasses import asdict
+import shutil
 import uuid
 from fastapi import BackgroundTasks, FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -14,6 +15,7 @@ from app.models import RipHistoryItem, RippingStatus
 from app.mkv import extract_disc_titles, write_job_manifest
 from app.models import AppSettings, DryRunRequest, ExtractionTestRequest
 from app.paths import get_disc_output_path, get_target_output_path
+from app.transcode import transcode_staging_directory
 
 # Configure structured console logging
 logging.basicConfig(
@@ -204,10 +206,56 @@ async def test_extraction(req: ExtractionTestRequest, background_tasks: Backgrou
     append_history_item(config.data_dir, initial_history)
 
     # 3. Dispatch extraction task
-    background_tasks.add_task(run_extraction_task, config, job_id, staging_dir)
+    background_tasks.add_task(run_full_pipeline_task, config, job_id, staging_dir)
 
     return {
         "status": "started",
         "job_id": job_id,
         "staging_dir": staging_dir
     }
+
+async def run_full_pipeline_task(config: AppSettings, job_id: str, staging_dir: str):
+    """Executes Stage 2 (extraction) followed immediately by Stage 3 (transcoding)."""
+    try:
+        # --- Stage 2: Rip Disc ---
+        logger.info(f"Starting Stage 2 (Extraction) for job {job_id}...")
+        extracted_files = await extract_disc_titles(config, staging_dir)
+        
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.EXTRACTED
+        )
+
+        # --- Stage 3: Transcode & Compress ---
+        logger.info(f"Starting Stage 3 (Transcode) for job {job_id}...")
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.COMPRESSING
+        )
+
+        output_files = await transcode_staging_directory(config, staging_dir)
+
+        # Pipeline Complete: Cleanup temp files and update history
+        if os.path.exists(staging_dir):
+            shutil.rmtree(staging_dir)
+            logger.info(f"Cleaned up staging directory: {staging_dir}")
+
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.COMPLETED,
+            end_time=datetime.now().isoformat()
+        )
+        logger.info(f"Job {job_id} fully completed! Output files: {output_files}")
+
+    except Exception as e:
+        logger.exception(f"Pipeline failed for job {job_id}: {e}")
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.FAILED,
+            end_time=datetime.now().isoformat(),
+            error=str(e)
+        )

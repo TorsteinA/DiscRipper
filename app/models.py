@@ -39,7 +39,7 @@ def build_makemkv_selection_string(languages: List[str]) -> str:
 
 @dataclass
 class MakeMKVPreset:
-    name: str = "Default (Movies + Extras)"
+    name: str = "Default"
     min_length_seconds: int = 120  # 2 minutes: captures extras, drops short menus/logos
     languages: List[str] = field(default_factory=lambda: list(DEFAULT_TARGET_LANGUAGES))
 
@@ -125,7 +125,7 @@ class JobManifest(BaseModel):
     season: int = 1
     episode: int = 1
     status: str = "RIPPED"
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 
 @dataclass

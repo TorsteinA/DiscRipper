@@ -217,6 +217,23 @@
         }
       }
 
+      function getStatusBadge(status) {
+        switch (status) {
+          case "EXTRACTING":
+            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-900/60 text-amber-300 border border-amber-700 animate-pulse">💿 EXTRACTING</span>';
+          case "EXTRACTED":
+            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-900/60 text-sky-300 border border-sky-700">📦 STAGED</span>';
+          case "COMPRESSING":
+            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-900/60 text-indigo-300 border border-indigo-700 animate-pulse">⚙️ COMPRESSING</span>';
+          case "COMPLETED":
+            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700">✓ COMPLETED</span>';
+          case "FAILED":
+            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED</span>';
+          default:
+            return `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300">${status}</span>`;
+        }
+      }
+
       async function performDryRun() {
         const btn = document.getElementById("dryRunBtn");
         const title = document.getElementById("titleInput").value.trim();
@@ -474,30 +491,24 @@
               const duration = formatDuration(item.start_time, item.end_time);
 
               return `
-                <div class="py-2.5 flex items-center justify-between">
-                <div class="space-y-0.5">
-                    <div class="flex items-center space-x-2">
-                    <span class="font-medium text-slate-200">${item.title}</span>
-                    ${item.year ? `<span class="text-slate-400 text-xs">(${item.year})</span>` : ""}
-                    </div>
-                    <div class="text-[11px] text-slate-500 flex items-center space-x-2">
-                    <span>${item.disc_type}</span>
-                    <span>&bull;</span>
-                    <span>${item.preset_used}</span>
-                    ${duration ? `<span>&bull;</span> <span class="text-slate-400">⏱️ ${duration}</span>` : ""}
-                    </div>
-                </div>
-                <div>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${
-                      item.status === "COMPLETED"
-                        ? "bg-emerald-900/60 text-emerald-300 border border-emerald-700"
-                        : item.status === "FAILED"
-                          ? "bg-rose-900/60 text-rose-300 border border-rose-700"
-                          : "bg-indigo-900/60 text-indigo-300 border border-indigo-700"
-                    }">${item.status}</span>
-                </div>
-                </div>
-            `;
+          <div class="py-2.5 flex items-center justify-between">
+            <div class="space-y-0.5">
+              <div class="flex items-center space-x-2">
+                <span class="font-medium text-slate-200">${item.title}</span>
+                ${item.year ? `<span class="text-slate-400 text-xs">(${item.year})</span>` : ""}
+              </div>
+              <div class="text-[11px] text-slate-500 flex items-center space-x-2">
+                <span>${item.disc_type}</span>
+                <span>&bull;</span>
+                <span>${item.preset_used}</span>
+                ${duration ? `<span>&bull;</span> <span class="text-slate-400">⏱️ ${duration}</span>` : ""}
+              </div>
+            </div>
+            <div>
+              ${getStatusBadge(item.status)}
+            </div>
+          </div>
+        `;
             })
             .join("");
         } catch (err) {
