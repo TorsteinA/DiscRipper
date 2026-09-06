@@ -293,7 +293,7 @@
           banner.classList.remove("hidden");
         } finally {
           btn.disabled = false;
-          btn.textContent = "Dry Run Config";
+          btn.textContent = "Dry Run";
         }
       }
 
@@ -304,10 +304,8 @@
         const year = document.getElementById("yearInput").value.trim();
         const mediaType = document.getElementById("mediaTypeSelect").value;
         const presetKey = document.getElementById("presetSelect").value;
-        const season =
-          parseInt(document.getElementById("seasonInput").value, 10) || 1;
-        const episode =
-          parseInt(document.getElementById("episodeInput").value, 10) || 1;
+        const season = parseInt(document.getElementById("seasonInput").value);
+        const episode = parseInt(document.getElementById("episodeInput").value);
         const banner = document.getElementById("errorBanner");
         const discType = window.detectedDiscType || "DVD";
 
@@ -316,6 +314,16 @@
             "Please provide both a Title and a Year before starting.";
           banner.classList.remove("hidden");
           return;
+        }
+
+        if (mediaType === "show") {
+          // Shows must have season and episode filled in as well
+          if (!episode || !season) {
+            banner.textContent =
+              "Plase provide Season and First Episode On Disc before starting.";
+            banner.classList.remove("hidden");
+            return;
+          }
         }
 
         ripBtn.disabled = true;

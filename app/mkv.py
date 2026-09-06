@@ -64,7 +64,7 @@ async def extract_disc_titles(
         "makemkvcon",
         "-r",
         "mkv",
-        f"dev:{config.drive_path}",
+        "disc:0",
         "all",
         staging_dir,
         f"--minlength={config.makemkv_preset.min_length_seconds}",

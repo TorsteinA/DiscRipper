@@ -6,7 +6,7 @@ FROM python:3.11-slim-bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
-ENV LD_LIBRARY_PATH="/usr/lib:/opt/makemkv/lib:${LD_LIBRARY_PATH}"
+ENV LD_LIBRARY_PATH="/usr/lib:/opt/makemkv/lib"
 
 # Enable Debian contrib/non-free repos
 RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
@@ -25,10 +25,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     va-driver-all \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy MakeMKV CLI binary and ALL associated libraries
-COPY --from=makemkv_source /opt/makemkv/bin/makemkvcon /usr/bin/makemkvcon
+# Copy MakeMKV binaries and libraries directly from /opt/makemkv/
+COPY --from=makemkv_source /opt/makemkv/bin/ /usr/bin/
 COPY --from=makemkv_source /opt/makemkv/lib/ /opt/makemkv/lib/
 COPY --from=makemkv_source /opt/makemkv/lib/ /usr/lib/
+
+# Ensure binaries have explicit executable permissions
+RUN chmod +x /usr/bin/makemkvcon /usr/bin/mmgplsrv*
 
 WORKDIR /app
 

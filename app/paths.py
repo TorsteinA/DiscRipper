@@ -1,12 +1,21 @@
 import os
 import re
-from typing import Optional
-from app.models import AppSettings, MediaType
+from app.models import AppSettings, MediaType, UnsupportedMediaTypeError
 
 
-class UnsupportedMediaTypeError(Exception):
-    """Raised when an unsupported MediaType is attempted used."""
-    pass
+def get_next_extra_number(movie_dir: str) -> int:
+    """Scans the extras directory and returns the next available extra index."""
+    extras_dir = os.path.join(movie_dir, "extras")
+    if not os.path.exists(extras_dir):
+        return 1
+
+    existing_indices = []
+    for filename in os.listdir(extras_dir):
+        match = re.search(r"Extra\s+(\d+)", filename, re.IGNORECASE)
+        if match:
+            existing_indices.append(int(match.group(1)))
+
+    return max(existing_indices, default=0) + 1
 
 
 def sanitize_filename(name: str) -> str:

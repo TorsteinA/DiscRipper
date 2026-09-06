@@ -26,6 +26,10 @@ class RippingStatus(str, Enum):
     FAILED = "FAILED"              # Pipeline error encountered
 
 
+class UnsupportedMediaTypeError(Exception):
+    """Raised when an unsupported MediaType is attempted used."""
+    pass
+
 def build_makemkv_selection_string(languages: List[str]) -> str:
     """
     Constructs a MakeMKV selection rule targeting audio and subtitles 

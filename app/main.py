@@ -123,7 +123,7 @@ def dry_run_job_configuration(req: DryRunRequest):
         "makemkvcon",
         "-r",
         "mkv",
-        f"dev:{config.drive_path}",
+        "disc:0",
         "all",
         job_staging_dir,
         f"--minlength={config.makemkv_preset.min_length_seconds}",
