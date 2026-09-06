@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+from app.disc import release_drive_lock
 from app.models import AppSettings, DiscType, JobManifest, MediaType
 
 logger = logging.getLogger("ripper.mkv")
@@ -58,6 +59,7 @@ async def extract_disc_titles(
     Executes makemkvcon to extract all titles matching minimum length criteria.
     Streams readable log output to stdout in real time.
     """
+    await release_drive_lock(config.drive_path)
     os.makedirs(staging_dir, exist_ok=True)
 
     cmd = [
@@ -72,23 +74,33 @@ async def extract_disc_titles(
 
     logger.info(f"Executing MakeMKV extraction: {' '.join(cmd)}")
 
-    process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT
-    )
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT
+        )
 
-    if process.stdout:
-        while True:
-            line = await process.stdout.readline()
-            if not line:
-                break
-            decoded = line.decode(errors="ignore").strip()
-            # Filter out raw progress bar noise, log meaningful status messages
-            if decoded and not decoded.startswith(("PRGV:", "PRGC:", "PRGT:")):
-                logger.info(f"[MakeMKV] {decoded}")
+        
+        if process.stdout:
+            while True:
+                line = await process.stdout.readline()
+                if not line:
+                    break
+                decoded = line.decode(errors="ignore").strip()
+                # Filter out raw progress bar noise, log meaningful status messages
+                if decoded and not decoded.startswith(("PRGV:", "PRGC:", "PRGT:")):
+                    logger.info(f"[MakeMKV] {decoded}")
 
-    returncode = await process.wait()
+        returncode = await process.wait()
+    except Exception:
+        # Explicitly kill process if task is cancelled or errors out
+        if process.returncode is None:
+            process.kill()
+            await process.wait()
+        await release_drive_lock(config.drive_path)
+        raise
+
 
     if returncode != 0:
         logger.error(f"MakeMKV extraction failed with exit code {returncode}")

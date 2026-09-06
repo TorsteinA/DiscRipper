@@ -153,28 +153,6 @@ def dry_run_job_configuration(req: DryRunRequest):
         "handbrake_cmd_template": handbrake_cmd_template
     }
 
-async def run_extraction_task(config: AppSettings, job_id: str, staging_dir: str):
-    """Background execution wrapper for makemkvcon with history state tracking."""
-    try:
-        files = await extract_disc_titles(config, staging_dir)
-        logger.info(f"Background extraction complete for {staging_dir}. Extracted {len(files)} files.")
-        
-        # Transition state to EXTRACTED (ready for Stage 3 batch compression)
-        update_history_item(
-            config.data_dir,
-            job_id=job_id,
-            status=RippingStatus.EXTRACTED,
-        )
-    except Exception as e:
-        logger.exception(f"Background extraction failed for {staging_dir}: {e}")
-        update_history_item(
-            config.data_dir,
-            job_id=job_id,
-            status=RippingStatus.FAILED,
-            end_time=datetime.now().isoformat(),
-            error=str(e)
-        )
-
 @app.post("/api/rip", status_code=202)
 async def start_rip_job(req: RipRequest, background_tasks: BackgroundTasks):
     job_id = f"job_{str(uuid.uuid4())[:8]}"

@@ -15,6 +15,7 @@ RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmwa
 RUN apt-get update && apt-get install -y --no-install-recommends \
     handbrake-cli \
     util-linux \
+    eject \
     ffmpeg \
     curl \
     ca-certificates \
