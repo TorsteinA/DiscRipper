@@ -72,16 +72,31 @@ async def transcode_staging_directory(
             stderr=asyncio.subprocess.STDOUT
         )
 
-        # Stream HandBrake progress output line-by-line
+        # Stream HandBrake progress output safely without buffer overflow
         if process.stdout:
+            buffer = ""
             while True:
-                line = await process.stdout.readline()
-                if not line:
+                # Read chunks rather than waiting for a full newline (\n)
+                chunk = await process.stdout.read(1024)
+                if not chunk:
                     break
-                decoded = line.decode(errors="ignore").strip()
-                if decoded and "Encoding: task" in decoded:
-                    logger.info(f"[HandBrake] {decoded}")
-
+                
+                buffer += chunk.decode(errors="ignore")
+                
+                # HandBrake separates progress lines using carriage returns (\r) or newlines (\n)
+                while "\r" in buffer or "\n" in buffer:
+                    # Find whichever delimiter comes first
+                    pos_r = buffer.find("\r")
+                    pos_n = buffer.find("\n")
+                    
+                    if pos_r != -1 and (pos_n == -1 or pos_r < pos_n):
+                        line, buffer = buffer[:pos_r], buffer[pos_r + 1:]
+                    else:
+                        line, buffer = buffer[:pos_n], buffer[pos_n + 1:]
+                    
+                    line = line.strip()
+                    if line and "Encoding: task" in line:
+                        logger.info(f"[HandBrake] {line}")
         returncode = await process.wait()
 
         if returncode != 0:

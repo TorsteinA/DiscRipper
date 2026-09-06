@@ -46,11 +46,12 @@
   - [x] for Shows
   - At this stage, just printing it is probably sufficient
 - [x] Stage 2: Add `app/ripper.py` for `makemkvcon` extraction
-- [ ] Add real-time log streaming for `makemkvcon` execution.
+- [x] Stage 3: Add `HandBrakeCLI` processing for compression
+- [x] Verify correct creation of output directory and file name.
+- [x] Stage 4: delete temp folder if everything went well. These files are huge, so don't want to keep them around unnecessarily
+- [ ] Verify full rip works
 - [ ] Add items to and edit them from history as they are being processed
-- [ ] Stage 3: Add `HandBrakeCLI` processing for compression
-- [ ] Verify correct creation of output directory and file name.
-- [ ] Stage 4: delete temp folder if everything went well. These files are huge, so don't want to keep them around unnecessarily
+- [ ] Add real-time log streaming for `makemkvcon` execution.
 
 ## Phase 5: Real-time Progress & WebSockets
 
