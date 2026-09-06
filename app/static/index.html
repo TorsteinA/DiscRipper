@@ -151,11 +151,11 @@
       <div class="flex items-center space-x-3 pt-2">
         <button
           type="button"
-          onclick="startExtraction()"
+          onclick="startRipJob()"
           id="ripBtn"
           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-xs font-semibold text-white transition shadow-sm"
         >
-          Start Extraction (Stage 2)
+          Start Rip Job
         </button>
         <button
           type="button"
@@ -297,7 +297,7 @@
         }
       }
 
-      async function startExtraction() {
+      async function startRipJob() {
         const ripBtn = document.getElementById("ripBtn");
         const dryBtn = document.getElementById("dryRunBtn");
         const title = document.getElementById("titleInput").value.trim();
@@ -309,23 +309,22 @@
         const episode =
           parseInt(document.getElementById("episodeInput").value, 10) || 1;
         const banner = document.getElementById("errorBanner");
-
-        // Read detected disc_type or fallback to DVD
         const discType = window.detectedDiscType || "DVD";
 
         if (!title || !year) {
           banner.textContent =
-            "Please provide both a Title and a Year before starting extraction.";
+            "Please provide both a Title and a Year before starting.";
           banner.classList.remove("hidden");
           return;
         }
 
         ripBtn.disabled = true;
         dryBtn.disabled = true;
+        ripBtn.textContent = "Rip Started...";
         banner.classList.add("hidden");
 
         try {
-          const res = await fetch("/api/test-extract", {
+          const res = await fetch("/api/rip", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -341,21 +340,19 @@
 
           const data = await res.json();
           if (!res.ok) {
-            banner.textContent = data.detail || "Failed to start extraction.";
+            banner.textContent = data.detail || "Failed to start rip job.";
             banner.classList.remove("hidden");
             return;
           }
 
-          alert(
-            `Extraction Started!\n\nJob ID: ${data.job_id}\nStaging Dir: ${data.staging_dir}\n\nCheck Dockge terminal logs for real-time output.`,
-          );
           loadHistory();
         } catch (err) {
-          banner.textContent = "Network error while starting extraction.";
+          banner.textContent = "Network error while starting rip job.";
           banner.classList.remove("hidden");
         } finally {
           ripBtn.disabled = false;
           dryBtn.disabled = false;
+          ripBtn.textContent = "Start Rip Job";
         }
       }
 

@@ -4,7 +4,7 @@ This is a pragmatic disc ripper project that does the bare minimum I need it to 
 
 I'm targeting a Jellyfin library, and will therefore let Jellyfin do the metadata and image collection. I will just rip the mkv file, compress it, and place it in a folder structure that fits the requirements of Jellyfin.
 
-Building this tool has relied heavily on the use of AI; specifically Gemini. I do not need this tool to be production-ready, or enterprise-grade. I just need a simple tool that will produce the files I want it to.
+While Gemini has been heavily involved when writing this tool, I have done most of the work myself. I simply do not think Gemini produces code of sufficient quality itself to get through a project like this without producing a bunch of weird bugs. I have constantly needed to babysit the outputs and verify every tiny step to make something that I trust to work even just for myself.
 
 There will be a lot of weird commits, as I'm developing on a machine that doesn't have the environment to run the code. Pushing, creating the image, and pulling the image, is how the code is manually tested.
 
@@ -16,14 +16,16 @@ services:
     image: ghcr.io/torsteina/discripper:latest
     container_name: disc-ripper
     restart: unless-stopped
+    privileged: true
     ports:
       - 8095:8000
     environment:
       - MAKEMKV_KEY=[key-id]
+    devices:
+      - /dev/sr0:/dev/sr0
+      - /dev/sg0:/dev/sg0
+      - /dev/dri:/dev/dri
     volumes:
-      # Hardware mapping
-      - /dev:/dev:ro # Read-only access to host device trees
-      - /dev/dri:/dev/dri # Keep direct GPU access for QuickSync
       # Storage mapping
       - /appdata/discripper/data:/data # peristent storage
       - /srv/dev-disk-by-uuid-[id]/JellyfinMedia/Movies:/media/movies

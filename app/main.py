@@ -13,7 +13,7 @@ from app.disc import scan_optical_drive
 from app.history import append_history_item, update_history_item, load_history
 from app.models import RipHistoryItem, RippingStatus
 from app.mkv import extract_disc_titles, write_job_manifest
-from app.models import AppSettings, DryRunRequest, ExtractionTestRequest
+from app.models import AppSettings, DryRunRequest, RipRequest
 from app.paths import get_disc_output_path, get_target_output_path
 from app.transcode import transcode_staging_directory
 
@@ -175,8 +175,8 @@ async def run_extraction_task(config: AppSettings, job_id: str, staging_dir: str
             error=str(e)
         )
 
-@app.post("/api/test-extract", status_code=202)
-async def test_extraction(req: ExtractionTestRequest, background_tasks: BackgroundTasks):
+@app.post("/api/rip", status_code=202)
+async def start_rip_job(req: RipRequest, background_tasks: BackgroundTasks):
     job_id = f"job_{str(uuid.uuid4())[:8]}"
     staging_dir = os.path.join(config.temp_dir, job_id)
     preset = config.handbrake_presets.get(req.preset_key)
@@ -205,7 +205,6 @@ async def test_extraction(req: ExtractionTestRequest, background_tasks: Backgrou
     )
     append_history_item(config.data_dir, initial_history)
 
-    # 3. Dispatch extraction task
     background_tasks.add_task(run_full_pipeline_task, config, job_id, staging_dir)
 
     return {
@@ -215,7 +214,7 @@ async def test_extraction(req: ExtractionTestRequest, background_tasks: Backgrou
     }
 
 async def run_full_pipeline_task(config: AppSettings, job_id: str, staging_dir: str):
-    """Executes Stage 2 (extraction) followed immediately by Stage 3 (transcoding)."""
+    """Executes Stage 2 (Extraction) -> Stage 3 (Transcode) -> Staging Cleanup."""
     try:
         # --- Stage 2: Rip Disc ---
         logger.info(f"Starting Stage 2 (Extraction) for job {job_id}...")
@@ -237,10 +236,10 @@ async def run_full_pipeline_task(config: AppSettings, job_id: str, staging_dir: 
 
         output_files = await transcode_staging_directory(config, staging_dir)
 
-        # Pipeline Complete: Cleanup temp files and update history
+        # --- Stage 4: Cleanup Staging Directory ---
         if os.path.exists(staging_dir):
             shutil.rmtree(staging_dir)
-            logger.info(f"Cleaned up staging directory: {staging_dir}")
+            logger.info(f"Successfully cleaned up staging folder: {staging_dir}")
 
         update_history_item(
             config.data_dir,
@@ -248,7 +247,7 @@ async def run_full_pipeline_task(config: AppSettings, job_id: str, staging_dir: 
             status=RippingStatus.COMPLETED,
             end_time=datetime.now().isoformat()
         )
-        logger.info(f"Job {job_id} fully completed! Output files: {output_files}")
+        logger.info(f"Job {job_id} fully completed! Target files placed: {output_files}")
 
     except Exception as e:
         logger.exception(f"Pipeline failed for job {job_id}: {e}")

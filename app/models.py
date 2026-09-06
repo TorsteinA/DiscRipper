@@ -106,7 +106,7 @@ class DryRunRequest(BaseModel):
     season: int = 1
     episode: int = 1
 
-class ExtractionTestRequest(BaseModel):
+class RipRequest(BaseModel):
     title: str
     year: str
     media_type: MediaType = MediaType.Movie
