@@ -1,7 +1,6 @@
 import os
 import asyncio
 import logging
-from app.disc import release_drive_lock
 from app.models import AppSettings, DiscType, JobManifest, MediaType
 
 logger = logging.getLogger("ripper.mkv")
@@ -59,7 +58,6 @@ async def extract_disc_titles(
     Executes makemkvcon to extract all titles matching minimum length criteria.
     Streams readable log output to stdout in real time.
     """
-    await release_drive_lock(config.drive_path)
     os.makedirs(staging_dir, exist_ok=True)
 
     cmd = [
@@ -74,6 +72,7 @@ async def extract_disc_titles(
 
     logger.info(f"Executing MakeMKV extraction: {' '.join(cmd)}")
 
+    process = None
     try:
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -81,24 +80,20 @@ async def extract_disc_titles(
             stderr=asyncio.subprocess.STDOUT
         )
 
-        
         if process.stdout:
             while True:
                 line = await process.stdout.readline()
                 if not line:
                     break
                 decoded = line.decode(errors="ignore").strip()
-                # Filter out raw progress bar noise, log meaningful status messages
                 if decoded and not decoded.startswith(("PRGV:", "PRGC:", "PRGT:")):
                     logger.info(f"[MakeMKV] {decoded}")
 
         returncode = await process.wait()
     except Exception:
-        # Explicitly kill process if task is cancelled or errors out
-        if process.returncode is None:
+        if process and process.returncode is None:
             process.kill()
             await process.wait()
-        await release_drive_lock(config.drive_path)
         raise
 
 

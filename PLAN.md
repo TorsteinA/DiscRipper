@@ -10,7 +10,7 @@
 
 ## Phase 2: Host Hardware Access Verification
 
-- [x] Add `disc.py` for non-mounting drive detection (`blkid` & `makemkvcon`).
+- [x] Add `disc.py` for non-mounting drive detection with `makemkvcon`.
 - [x] Expose `/api/scan` endpoint.
 - [x] Deploy to Dockge with host privileges (`privileged: true` and `/dev:/dev`).
 - [x] Verify optical drive scan results against physical server drive.
@@ -36,7 +36,7 @@
 - [x] System for storing ripping history and showing it in the WebUI
 - [x] Fix proper paths for the things we want, from compose-yaml to the container.
       `compose.yaml` should probably forward the folders for Movies, Shows, and appdata.
-- [ ] Get from Form input to the outputs we need.
+- [x] Get from Form input to the outputs we need.
   - [x] Ensure we have permissions to write files.
   - Ensure we get correct CLI args for MakeMKV
   - Ensure we get correct CLI args for Handbrake
@@ -57,6 +57,7 @@
   - [x] for Movie
   - [ ] For Movie Extras
   - [ ] For Show
+- [ ] Ensure cleanup and proper release so we can keep ripping while container is alive
 - [ ] Add MediaType to Ripping History elements and UI, to separate extra content from main film
 
 ## Phase 5: Real-time Progress & WebSockets

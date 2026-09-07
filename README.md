@@ -23,7 +23,7 @@ services:
       - MAKEMKV_KEY=[key-id]
     devices:
       - /dev/sr0:/dev/sr0
-      - /dev/sg0:/dev/sg0
+      - /dev/sg1:/dev/sg1
       - /dev/dri:/dev/dri
     volumes:
       # Storage mapping
