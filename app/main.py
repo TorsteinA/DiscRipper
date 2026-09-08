@@ -133,6 +133,7 @@ def dry_run_job_configuration(req: DryRunRequest):
         "HandBrakeCLI",
         "-i", f"{job_staging_dir}/<extracted_title>.mkv",
         "-o", sample_target_file,
+        "--threads", config.num_threads,
         *preset.to_cli_args()
     ]
 

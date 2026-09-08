@@ -144,14 +144,20 @@ class ScanResult:
 
 
 class AppSettings(BaseSettings):
+    # storage
     drive_path: str = "/dev/sr0"
     data_dir: str = "/data"
     temp_dir: str = "/tmp/ripper"
     output_dir_movies: str = "/media/movies"
     output_dir_shows: str = "/media/shows"
+
+    #makemkv
     makemkv_key: str = ""
     makemkv_languages: List[str] = Field(default_factory=lambda: list(DEFAULT_TARGET_LANGUAGES))
     min_length_seconds: int = 120
+
+    # handbrake
+    num_threads: int = 5
 
     # Populated programmatically in load_config()
     makemkv_preset: MakeMKVPreset = Field(default_factory=MakeMKVPreset)

@@ -25,9 +25,11 @@ services:
       - /dev/sr0:/dev/sr0
       - /dev/sg1:/dev/sg1
       - /dev/dri:/dev/dri
+      - /dev/bus/usb:/dev/bus/usb
     volumes:
       # Storage mapping
       - /appdata/discripper/data:/data # peristent storage
+      - /srv/dev-disk-by-uuid-[id]/tmp/ripper:/tmp/ripper
       - /srv/dev-disk-by-uuid-[id]/JellyfinMedia/Movies:/media/movies
       - /srv/dev-disk-by-uuid-[id]/JellyfinMedia/Shows:/media/shows
     group_add:

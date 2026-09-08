@@ -9,18 +9,18 @@ def get_default_handbrake_presets(languages: list[str]) -> Dict[str, HandBrakePr
     """Generates default HandBrake presets using the configured language list."""
     return {
         "dvd": HandBrakePreset(
-            name="DVD 576p/480p (x264 Slower RF18 Decomb)",
+            name="DVD 576p/480p (x264 Slow RF18 Decomb)",
             encoder="x264",
             quality=18,
-            encoder_preset="slower",
+            encoder_preset="slow",
             decomb=True,
             audio_languages=languages
         ),
         "bluray": HandBrakePreset(
-            name="Blu-ray 1080p (x264 Slow RF20 Passthrough)",
+            name="Blu-ray 1080p (x264 Medium RF20 Passthrough)",
             encoder="x264",
             quality=20,
-            encoder_preset="slow",
+            encoder_preset="medium",
             decomb=False,
             audio_languages=languages
         ),

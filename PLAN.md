@@ -62,11 +62,15 @@
 
 ## Phase 5: Real-time Progress & WebSockets
 
+- [ ] Add a container version to the WebUI.
+  - Can we display the commit sha or make a version string based on git tags, or in other ways version it nicely?
+  - The important part is that it's clearly distinguishable when I'm making a change, even if I force push changes to overwrite a commit's content.
 - [ ] Add real-time log streaming for `makemkvcon` execution.
 - [ ] Log streaming for both HandBrake and MakeMKV should probably reuse lines with `/r` instead of constantly pinging new lines?
   - Can this even be done when we want to stream with Websockets?
   - Other ways to avoid spamming the logs so much without sacrificing what we want in the WebUI?
 - [ ] Display whether drive is available and react to drive being connected/disconnected.
+  - Can also be used to is disable the Scan Drive button until the drive has done the initial hardware read.
 - [ ] Make active History items in WebUI update when their status changes.
   - Would be great to know when it goes from EXTRACTING -> EXTRACTED -> COMPRESSING -> FINISHED on nice runs.
   - Would also be great to be able to see visually that it fails by having it go from ie EXTRACTING -> FAILED.
@@ -79,6 +83,9 @@
     ```
         Stage 1:     |XXXXXXXXXXXXXXXXXXXXX|
         Stage 2:     |XXXXXXXXXXXXXXXXXXXXX|
+            title 1:   |XXXXXXXXXXXXXXXXXXX|
+            title 2:   |XXXXXXXXXXXXXXXXXXX|
+            title 3:   |XXXXXXXXXXXXXXXXXXX|
         Stage 3:     |XXXXXXX--------------|
             title 1:   |XXXXXXXXXXXXXXXXX--|
             title 2:   |-------------------|
