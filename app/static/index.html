@@ -46,6 +46,19 @@
       </div>
     </section>
 
+    <!-- Resume Job Section -->
+    <section
+      id="resume-job-section"
+      class="hidden bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-4"
+    >
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+        Resumable Staging Jobs
+      </h2>
+
+      <!-- Dynamic job list container -->
+      <div id="resumable-jobs-list" class="space-y-3"></div>
+    </section>
+
     <!-- Rip Options Form -->
     <section
       class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5 space-y-4"
@@ -229,6 +242,10 @@
             return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700">✓ COMPLETED</span>';
           case "FAILED":
             return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED</span>';
+          case "FAILED_IN_STAGE_2":
+            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 2</span>';
+          case "FAILED_IN_STAGE_3":
+            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 3</span>';
           default:
             return `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300">${status}</span>`;
         }
@@ -361,6 +378,168 @@
           ripBtn.disabled = false;
           dryBtn.disabled = false;
           ripBtn.textContent = "Start Rip Job";
+        }
+      }
+
+      async function resumeJob(jobId) {
+        try {
+          const response = await fetch(`/api/jobs/resume/${jobId}`, {
+            method: "POST",
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            alert(`Failed to resume job: ${err.detail}`);
+            return;
+          }
+
+          const data = await response.json();
+          console.log(`Job ${data.job_id} resumed in background.`);
+
+          // Refresh your UI history list / status polling
+          if (typeof loadHistory === "function") {
+            loadHistory();
+          }
+        } catch (error) {
+          console.error("Error triggering Stage 3 resume:", error);
+        }
+      }
+      async function loadResumableJobs() {
+        const section = document.getElementById("resume-job-section");
+        const container = document.getElementById("resumable-jobs-list");
+
+        try {
+          const res = await fetch("/api/jobs/resumable");
+          if (!res.ok) return;
+
+          const jobs = await res.json();
+
+          // If no jobs exist, ensure section is hidden and exit
+          if (!jobs || jobs.length === 0) {
+            section.classList.add("hidden");
+            container.innerHTML = "";
+            return;
+          }
+
+          // Render each job card dynamically
+          container.innerHTML = jobs
+            .map(
+              (job) => `
+      <div class="flex items-center justify-between p-3 bg-slate-900/60 rounded-lg border border-slate-700/40">
+        <div>
+          <p class="text-sm font-medium text-slate-200">${job.title} (${job.year})</p>
+          <p class="text-xs text-slate-400">ID: ${job.job_id} &bull; Preset: ${job.preset_key}</p>
+        </div>
+        <button 
+          onclick="resumeJob('${job.job_id}')" 
+          class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors"
+        >
+          Resume Stage 3
+        </button>
+      </div>
+    `,
+            )
+            .join("");
+
+          // Reveal section
+          section.classList.remove("hidden");
+        } catch (err) {
+          console.error("Failed to fetch resumable jobs:", err);
+        }
+      }
+
+      async function resumeJob(jobId) {
+        try {
+          const response = await fetch(`/api/jobs/resume/${jobId}`, {
+            method: "POST",
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            alert(`Failed to resume job: ${err.detail}`);
+            return;
+          }
+
+          // Refresh the list immediately to remove/update resumed jobs
+          await loadResumableJobs();
+        } catch (error) {
+          console.error("Error triggering Stage 3 resume:", error);
+        }
+      }
+
+      async function deleteJob(jobId) {
+        if (
+          !confirm(
+            `Are you sure you want to delete staging files for ${jobId}?`,
+          )
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/jobs/${jobId}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            alert(`Failed to delete job: ${err.detail}`);
+            return;
+          }
+
+          // Refresh list to update UI and hide section if no jobs remain
+          await loadResumableJobs();
+        } catch (error) {
+          console.error("Error deleting staging job:", error);
+        }
+      }
+
+      async function loadResumableJobs() {
+        const section = document.getElementById("resume-job-section");
+        const container = document.getElementById("resumable-jobs-list");
+
+        try {
+          const res = await fetch("/api/jobs/resumable");
+          if (!res.ok) return;
+
+          const jobs = await res.json();
+
+          if (!jobs || jobs.length === 0) {
+            section.classList.add("hidden");
+            container.innerHTML = "";
+            return;
+          }
+
+          container.innerHTML = jobs
+            .map(
+              (job) => `
+      <div class="flex items-center justify-between p-3 bg-slate-900/60 rounded-lg border border-slate-700/40">
+        <div>
+          <p class="text-sm font-medium text-slate-200">${job.title} (${job.year})</p>
+          <p class="text-xs text-slate-400">ID: ${job.job_id} &bull; Preset: ${job.preset_key}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button 
+            onclick="resumeJob('${job.job_id}')" 
+            class="px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors"
+          >
+            Resume
+          </button>
+          <button 
+            onclick="deleteJob('${job.job_id}')" 
+            class="px-3 py-1.5 text-xs font-medium text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-700/80 border border-rose-800/50 rounded-lg transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    `,
+            )
+            .join("");
+
+          section.classList.remove("hidden");
+        } catch (err) {
+          console.error("Failed to fetch resumable jobs:", err);
         }
       }
 
@@ -526,6 +705,9 @@
 
       // Load presets when script runs
       loadPresets();
+
+      // Fetch resumable jobs when the DOM is ready
+      document.addEventListener("DOMContentLoaded", loadResumableJobs);
     </script>
   </body>
 </html>

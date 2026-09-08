@@ -94,7 +94,7 @@ async def transcode_staging_directory(
             "HandBrakeCLI",
             "-i", source_path,
             "-o", target_path,
-            "--threads", config.num_threads,
+            "--threads", str(config.num_threads),
             *preset.to_cli_args()
         ]
 

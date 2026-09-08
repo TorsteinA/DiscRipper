@@ -24,6 +24,8 @@ class RippingStatus(str, Enum):
     COMPRESSING = "COMPRESSING"    # Stage 3: HandBrakeCLI active
     COMPLETED = "COMPLETED"        # Final MKV placed in Jellyfin library
     FAILED = "FAILED"              # Pipeline error encountered
+    FAILED2 = "FAILED_IN_STAGE_2"  # Pipeline error encountered at stage 2
+    FAILED3 = "FAILED_IN_STAGE_3"  # Pipeline error encountered at stage 3
 
 
 class UnsupportedMediaTypeError(Exception):

@@ -59,6 +59,7 @@
   - [ ] For Show
 - [ ] Ensure cleanup and proper release so we can keep ripping while container is alive
 - [ ] Add MediaType to Ripping History elements and UI, to separate extra content from main film
+- [ ] Add ability to continue a failed job. If it failed at stage 3, we should be able to just redo stage 3.
 
 ## Phase 5: Real-time Progress & WebSockets
 

@@ -12,7 +12,7 @@ from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
 from app.history import append_history_item, update_history_item, load_history
 from app.models import RipHistoryItem, RippingStatus
-from app.mkv import extract_disc_titles, write_job_manifest
+from app.mkv import extract_disc_titles, read_job_manifest, write_job_manifest
 from app.models import AppSettings, DryRunRequest, RipRequest
 from app.paths import get_disc_output_path, get_target_output_path
 from app.transcode import transcode_staging_directory
@@ -133,7 +133,7 @@ def dry_run_job_configuration(req: DryRunRequest):
         "HandBrakeCLI",
         "-i", f"{job_staging_dir}/<extracted_title>.mkv",
         "-o", sample_target_file,
-        "--threads", config.num_threads,
+        "--threads", str(config.num_threads),
         *preset.to_cli_args()
     ]
 
@@ -195,18 +195,73 @@ async def start_rip_job(req: RipRequest, background_tasks: BackgroundTasks):
 async def run_full_pipeline_task(config: AppSettings, job_id: str, staging_dir: str):
     """Executes Stage 2 (Extraction) -> Stage 3 (Transcode) -> Staging Cleanup."""
     try:
+        # Stage 2: Rip Disc
+        await run_stage2_extraction_task(config, job_id, staging_dir)
+        # Stage 3: Transcode & Cleanup
+        await run_stage3_transcode_task(config, job_id, staging_dir)
+    except Exception as e:
+        logger.exception(f"Pipeline failed for job {job_id}: {e}")
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.FAILED,
+            end_time=datetime.now().isoformat(),
+            error=str(e)
+        )
+
+
+@app.post("/api/jobs/resume/{job_id}", status_code=202)
+async def resume_stage3_job(job_id: str, background_tasks: BackgroundTasks):
+    staging_dir = os.path.join(config.temp_dir, job_id)
+    manifest_path = os.path.join(staging_dir, "job.json")
+
+    if not os.path.exists(manifest_path):
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Cannot resume: No job manifest found at {staging_dir}"
+        )
+
+    # Verify extracted .mkv files exist in the staging directory
+    mkv_files = [f for f in os.listdir(staging_dir) if f.endswith(".mkv")]
+    if not mkv_files:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot resume: No .mkv source files found in {staging_dir}"
+        )
+
+    background_tasks.add_task(run_stage3_transcode_task, config, job_id, staging_dir)
+
+    return {
+        "status": "resumed",
+        "job_id": job_id,
+        "staging_dir": staging_dir
+    }
+
+async def run_stage2_extraction_task(config: AppSettings, job_id: str, staging_dir: str):
+    try: 
         # --- Stage 2: Rip Disc ---
         logger.info(f"Starting Stage 2 (Extraction) for job {job_id}...")
-        extracted_files = await extract_disc_titles(config, staging_dir)
+        await extract_disc_titles(config, staging_dir)
         
         update_history_item(
             config.data_dir,
             job_id=job_id,
             status=RippingStatus.EXTRACTED
         )
+    except Exception as e:
+        logger.exception(f"Pipeline failed at Stage 2 for job {job_id}: {e}")
+        update_history_item(
+            config.data_dir,
+            job_id=job_id,
+            status=RippingStatus.FAILED2,
+            end_time=datetime.now().isoformat(),
+            error=str(e)
+        )
 
-        # --- Stage 3: Transcode & Compress ---
-        logger.info(f"Starting Stage 3 (Transcode) for job {job_id}...")
+async def run_stage3_transcode_task(config: AppSettings, job_id: str, staging_dir: str):
+    """Executes Stage 3 (Transcode) directly from existing staging directory files."""
+    try:
+        logger.info(f"Resuming Stage 3 (Transcode) for existing job {job_id}...")
         update_history_item(
             config.data_dir,
             job_id=job_id,
@@ -215,7 +270,7 @@ async def run_full_pipeline_task(config: AppSettings, job_id: str, staging_dir: 
 
         output_files = await transcode_staging_directory(config, staging_dir)
 
-        # --- Stage 4: Cleanup Staging Directory ---
+        # Stage 4: Cleanup Staging Directory
         if os.path.exists(staging_dir):
             shutil.rmtree(staging_dir)
             logger.info(f"Successfully cleaned up staging folder: {staging_dir}")
@@ -226,14 +281,61 @@ async def run_full_pipeline_task(config: AppSettings, job_id: str, staging_dir: 
             status=RippingStatus.COMPLETED,
             end_time=datetime.now().isoformat()
         )
-        logger.info(f"Job {job_id} fully completed! Target files placed: {output_files}")
+        logger.info(f"Job {job_id} Stage 3 completed! Target files placed: {output_files}")
 
     except Exception as e:
-        logger.exception(f"Pipeline failed for job {job_id}: {e}")
+        logger.exception(f"Stage 3 transcode failed for job {job_id}: {e}")
         update_history_item(
             config.data_dir,
             job_id=job_id,
-            status=RippingStatus.FAILED,
+            status=RippingStatus.FAILED3,
             end_time=datetime.now().isoformat(),
             error=str(e)
+        )
+
+@app.get("/api/jobs/resumable")
+def get_resumable_jobs():
+    resumable = []
+    
+    if not os.path.exists(config.temp_dir):
+        return resumable
+
+    for folder_name in os.listdir(config.temp_dir):
+        staging_dir = os.path.join(config.temp_dir, folder_name)
+        manifest_path = os.path.join(staging_dir, "job.json")
+        
+        if os.path.isdir(staging_dir) and os.path.exists(manifest_path):
+            # Check if extracted .mkv files exist
+            mkv_files = [f for f in os.listdir(staging_dir) if f.endswith(".mkv")]
+            if mkv_files:
+                try:
+                    manifest = read_job_manifest(staging_dir)
+                    resumable.append(manifest.model_dump())
+                except Exception as e:
+                    logger.warning(f"Could not read manifest at {manifest_path}: {e}")
+                    
+    return resumable
+
+
+@app.delete("/api/jobs/{job_id}", status_code=200)
+def delete_staging_job(job_id: str):
+    # Ensure job_id parameter stays safely within config.temp_dir
+    staging_dir = os.path.abspath(os.path.join(config.temp_dir, job_id))
+    temp_base = os.path.abspath(config.temp_dir)
+
+    if not staging_dir.startswith(temp_base) or not os.path.exists(staging_dir):
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Staging directory for job '{job_id}' not found."
+        )
+
+    try:
+        shutil.rmtree(staging_dir)
+        logger.info(f"Deleted staging folder for job: {job_id}")
+        return {"status": "deleted", "job_id": job_id}
+    except Exception as e:
+        logger.error(f"Failed to delete staging folder {staging_dir}: {e}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to delete staging files: {str(e)}"
         )
