@@ -36,3 +36,11 @@ services:
       - "24" # host cdrom group
       - "44" # host render/video group
 ```
+
+---
+
+# Prerequisites
+
+DiscRipper runs with flags set for **Intel Quick Sync** and will fail if it's being run with a processor that does not support it.
+
+It was designed to run on an Intel i5-8500T.

@@ -158,9 +158,6 @@ class AppSettings(BaseSettings):
     makemkv_languages: List[str] = Field(default_factory=lambda: list(DEFAULT_TARGET_LANGUAGES))
     min_length_seconds: int = 120
 
-    # handbrake
-    num_threads: int = 5
-
     # Populated programmatically in load_config()
     makemkv_preset: MakeMKVPreset = Field(default_factory=MakeMKVPreset)
     handbrake_presets: Dict[str, HandBrakePreset] = Field(default_factory=dict)
