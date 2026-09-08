@@ -16,7 +16,7 @@ async def transcode_staging_directory(
 ) -> List[str]:
     """
     Reads job.json, routes the main feature and extras properly, and
-    transcodes all titles using HandBrakeCLI with safe chunked output reading.
+    transcodes all titles using HandBrakeCLI with real-time verbose output logging.
     """
     manifest = read_job_manifest(staging_dir)
     preset = config.handbrake_presets.get(manifest.preset_key)
@@ -86,14 +86,14 @@ async def transcode_staging_directory(
             )
 
         else:
-            raise UnsupportedMediaTypeError("Cannot Transcode Unsupported Media Type: {manifest.media_type}")
+            raise UnsupportedMediaTypeError(f"Cannot Transcode Unsupported Media Type: {manifest.media_type}")
 
         os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
         cmd = [
             "HandBrakeCLI",
-            "-i", source_path,
-            "-o", target_path,
+            "-i", str(source_path),
+            "-o", str(target_path),
             *preset.to_cli_args()
         ]
 
@@ -105,7 +105,6 @@ async def transcode_staging_directory(
             stderr=asyncio.subprocess.STDOUT
         )
 
-        # Chunked stream reader to prevent LimitOverrunError on \r progress updates
         if process.stdout:
             buffer = ""
             while True:
@@ -115,6 +114,7 @@ async def transcode_staging_directory(
                 
                 buffer += chunk.decode(errors="ignore")
                 
+                # Split lines on either carriage return (\r) or newline (\n)
                 while "\r" in buffer or "\n" in buffer:
                     pos_r = buffer.find("\r")
                     pos_n = buffer.find("\n")
@@ -125,13 +125,18 @@ async def transcode_staging_directory(
                         line, buffer = buffer[:pos_n], buffer[pos_n + 1:]
                     
                     line = line.strip()
-                    if line and "Encoding: task" in line:
+                    if line:
                         logger.info(f"[HandBrake] {line}")
+
+            # Flush any trailing log buffer text before process exit
+            if buffer.strip():
+                logger.info(f"[HandBrake] {buffer.strip()}")
 
         returncode = await process.wait()
 
         if returncode != 0:
-            logger.error(f"HandBrakeCLI failed on file {source_path} with exit code {returncode}")
+            logger.error(f"HandBrakeCLI failed on file {source_path} with exit code {returncode}.",  
+                         "\nThe target path was {target_path}, and should maybe be deleted manually")
             raise RuntimeError(f"HandBrakeCLI transcode failed on {os.path.basename(source_path)}")
 
         output_files.append(target_path)

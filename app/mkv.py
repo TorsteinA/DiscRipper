@@ -56,7 +56,7 @@ async def extract_disc_titles(
 ) -> list[str]:
     """
     Executes makemkvcon to extract all titles matching minimum length criteria.
-    Streams readable log output to stdout in real time.
+    Streams all log output to stdout in real time.
     """
     os.makedirs(staging_dir, exist_ok=True)
 
@@ -81,13 +81,31 @@ async def extract_disc_titles(
         )
 
         if process.stdout:
+            buffer = ""
             while True:
-                line = await process.stdout.readline()
-                if not line:
+                chunk = await process.stdout.read(1024)
+                if not chunk:
                     break
-                decoded = line.decode(errors="ignore").strip()
-                if decoded and not decoded.startswith(("PRGV:", "PRGC:", "PRGT:")):
-                    logger.info(f"[MakeMKV] {decoded}")
+                
+                buffer += chunk.decode(errors="ignore")
+                
+                # Handle both carriage returns (\r) and newlines (\n)
+                while "\r" in buffer or "\n" in buffer:
+                    pos_r = buffer.find("\r")
+                    pos_n = buffer.find("\n")
+                    
+                    if pos_r != -1 and (pos_n == -1 or pos_r < pos_n):
+                        line, buffer = buffer[:pos_r], buffer[pos_r + 1:]
+                    else:
+                        line, buffer = buffer[:pos_n], buffer[pos_n + 1:]
+                    
+                    line = line.strip()
+                    if line:
+                        logger.info(f"[MakeMKV] {line}")
+
+            # Flush remaining buffer text upon process completion
+            if buffer.strip():
+                logger.info(f"[MakeMKV] {buffer.strip()}")
 
         returncode = await process.wait()
     except Exception:
@@ -95,7 +113,6 @@ async def extract_disc_titles(
             process.kill()
             await process.wait()
         raise
-
 
     if returncode != 0:
         logger.error(f"MakeMKV extraction failed with exit code {returncode}")
