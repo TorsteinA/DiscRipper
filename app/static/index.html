@@ -231,23 +231,25 @@
       }
 
       function getStatusBadge(status) {
+        const badgeClasses =
+          "px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap shrink-0";
         switch (status) {
           case "EXTRACTING":
-            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-900/60 text-amber-300 border border-amber-700 animate-pulse">💿 EXTRACTING</span>';
+            return `<span class="${badgeClasses} bg-amber-900/60 text-amber-300 border border-amber-700 animate-pulse">💿 EXTRACTING</span>`;
           case "EXTRACTED":
-            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-900/60 text-sky-300 border border-sky-700">📦 STAGED</span>';
+            return `<span class="${badgeClasses} bg-sky-900/60 text-sky-300 border border-sky-700">📦 STAGED</span>`;
           case "COMPRESSING":
-            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-900/60 text-indigo-300 border border-indigo-700 animate-pulse">⚙️ COMPRESSING</span>';
+            return `<span class="${badgeClasses} bg-indigo-900/60 text-indigo-300 border border-indigo-700 animate-pulse">⚙️ COMPRESSING</span>`;
           case "COMPLETED":
-            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700">✓ COMPLETED</span>';
+            return `<span class="${badgeClasses} bg-emerald-900/60 text-emerald-300 border border-emerald-700">✓ COMPLETED</span>`;
           case "FAILED":
-            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED</span>';
+            return `<span class="${badgeClasses} bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED</span>`;
           case "FAILED_IN_STAGE_2":
-            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 2</span>';
+            return `<span class="${badgeClasses} bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 2</span>`;
           case "FAILED_IN_STAGE_3":
-            return '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 3</span>';
+            return `<span class="${badgeClasses} bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 3</span>`;
           default:
-            return `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300">${status}</span>`;
+            return `<span class="${badgeClasses} bg-slate-800 text-slate-300 border border-slate-700">${status}</span>`;
         }
       }
 
@@ -673,26 +675,38 @@
           container.innerHTML = items
             .map((item) => {
               const duration = formatDuration(item.start_time, item.end_time);
+              const mediaTypeFormatted = item.media_type
+                ? toTitleCase(item.media_type)
+                : null;
 
               return `
-          <div class="py-2.5 flex items-center justify-between">
-            <div class="space-y-0.5">
-              <div class="flex items-center space-x-2">
-                <span class="font-medium text-slate-200">${item.title}</span>
-                ${item.year ? `<span class="text-slate-400 text-xs">(${item.year})</span>` : ""}
-              </div>
-              <div class="text-[11px] text-slate-500 flex items-center space-x-2">
-                <span>${item.disc_type}</span>
-                <span>&bull;</span>
-                <span>${item.preset_used}</span>
-                ${duration ? `<span>&bull;</span> <span class="text-slate-400">⏱️ ${duration}</span>` : ""}
-              </div>
-            </div>
-            <div>
-              ${getStatusBadge(item.status)}
-            </div>
-          </div>
-        `;
+    <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/60 last:border-0">
+      <div class="space-y-1 min-w-0 flex-1">
+        <div class="flex flex-wrap items-center gap-1.5 leading-tight">
+          <span class="font-medium text-slate-200 text-sm break-words">${item.title}</span>
+          ${item.year ? `<span class="text-slate-400 text-xs">(${item.year})</span>` : ""}
+          ${
+            mediaTypeFormatted
+              ? `<span class="px-1.5 py-0.5 text-[10px] font-medium bg-slate-800 text-indigo-300 rounded border border-slate-700/60 whitespace-nowrap">${mediaTypeFormatted}</span>`
+              : ""
+          }
+        </div>
+        <div class="text-[11px] text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <span>${item.disc_type || "Unknown Disc"}</span>
+          <span>&bull;</span>
+          <span class="truncate max-w-[220px]" title="${item.preset_used}">${item.preset_used}</span>
+          ${
+            duration
+              ? `<span>&bull;</span> <span class="text-slate-300 font-mono">⏱️ ${duration}</span>`
+              : ""
+          }
+        </div>
+      </div>
+      <div class="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+        ${getStatusBadge(item.status)}
+      </div>
+    </div>
+  `;
             })
             .join("");
         } catch (err) {

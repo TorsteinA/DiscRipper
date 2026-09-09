@@ -57,9 +57,11 @@
   - [x] for Movie
   - [ ] For Movie Extras
   - [ ] For Show
-- [ ] Ensure cleanup and proper release so we can keep ripping while container is alive
+- [x] Ensure cleanup and proper release so we can keep ripping while container is alive
 - [ ] Add MediaType to Ripping History elements and UI, to separate extra content from main film
-- [ ] Add ability to continue a failed job. If it failed at stage 3, we should be able to just redo stage 3.
+  - Also make sure the status text looks okay on mobile.
+- [x] Add ability to continue a failed job. If it failed at stage 3, we should be able to just redo stage 3.
+  - Currently edits the last history item. Do I want to copy it and append instead?
 
 ## Phase 5: Real-time Progress & WebSockets
 
@@ -95,11 +97,13 @@
 
 ## Phase 6: QoL improvements
 
+- [ ] Can index.html be split into multiple files? It's become rather large by now
 - [ ] When starting a job, empty the form so it's ready for next use.
 - [ ] Add idiotproofing of user input data.
   - Title cannot contain weird characters. Should it be converted to Title Case on server?
   - Year must be a number between 1800 and today's year +5 (so we can don't crash if we were to want to rip an unreleased movie or extras relating to one)
   - season and episode must be a positive number
+- [ ] Add a max length to the History section
 - [ ] Add simple notification/chime on failure and completion.
 - [ ] Add option to cancel ongoing job.
   - Could be cases where I realize after starting that the input was wrong
