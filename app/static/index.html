@@ -11,14 +11,20 @@
     <header
       class="flex items-center justify-between border-b border-slate-800 pb-4"
     >
-      <div class="flex items-center space-x-3">
+      <div class="flex items-baseline space-x-3">
         <div
-          class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-lg"
+          class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-lg self-center"
         >
           💿
         </div>
         <h1 class="text-xl font-bold tracking-tight">Disc Ripper</h1>
+        <span
+          id="appVersion"
+          class="text-xs text-slate-400 font-mono self-baseline"
+          >dev</span
+        >
       </div>
+
       <button
         onclick="scanDrive()"
         id="scanBtn"
@@ -714,10 +720,21 @@
         }
       }
 
-      // Load history on boot
-      loadHistory();
+      async function loadVersion() {
+        try {
+          const res = await fetch("/api/version");
+          if (res.ok) {
+            const data = await res.json();
+            document.getElementById("appVersion").textContent = data.version;
+          }
+        } catch (err) {
+          console.error("Failed to fetch version", err);
+        }
+      }
 
-      // Load presets when script runs
+      // load some things on startup
+      loadVersion();
+      loadHistory();
       loadPresets();
 
       // Fetch resumable jobs when the DOM is ready

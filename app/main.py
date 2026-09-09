@@ -7,7 +7,7 @@ import uuid
 from fastapi import BackgroundTasks, FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.config import load_config
+from app.config import APP_VERSION, load_config
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
 from app.history import append_history_item, update_history_item, load_history
@@ -66,6 +66,10 @@ def get_presets():
 @app.get("/api/history")
 def get_ripping_history():
     return load_history(config.data_dir)
+
+@app.get("/api/version")
+def get_version():
+    return {"version": APP_VERSION}
 
 # MARK: Web UI
 

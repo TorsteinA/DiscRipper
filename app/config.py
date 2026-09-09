@@ -1,9 +1,11 @@
 import os
 import logging
 from typing import Dict
-from app.models import MakeMKVPreset, HandBrakePreset, AppSettings, DEFAULT_TARGET_LANGUAGES
+from app.models import MakeMKVPreset, HandBrakePreset, AppSettings
 
 logger = logging.getLogger("ripper.config")
+
+APP_VERSION = os.getenv("APP_VERSION", "dev")
 
 def get_default_handbrake_presets(languages: list[str]) -> Dict[str, HandBrakePreset]:
     """Generates default HandBrake presets using the configured language list."""

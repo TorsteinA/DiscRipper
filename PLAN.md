@@ -55,10 +55,10 @@
 - [x] Ensure compression does not overwrite main title.
 - [ ] Verify full rip works
   - [x] for Movie
-  - [ ] For Movie Extras
+  - [x] For Movie Extras
   - [ ] For Show
 - [x] Ensure cleanup and proper release so we can keep ripping while container is alive
-- [ ] Add MediaType to Ripping History elements and UI, to separate extra content from main film
+- [x] Add MediaType to Ripping History elements and UI, to separate extra content from main film
   - Also make sure the status text looks okay on mobile.
 - [x] Add ability to continue a failed job. If it failed at stage 3, we should be able to just redo stage 3.
   - Currently edits the last history item. Do I want to copy it and append instead?
@@ -68,12 +68,21 @@
 - [ ] Add a container version to the WebUI.
   - Can we display the commit sha or make a version string based on git tags, or in other ways version it nicely?
   - The important part is that it's clearly distinguishable when I'm making a change, even if I force push changes to overwrite a commit's content.
+- [ ] Display whether drive is available and react to drive being connected/disconnected.
+- [ ] Disable the Scan Drive button while the drive does the initial hardware read.
+  - Starting scan before its ready locks it and it needs a power cycle.
+- [ ] Design a V2 of the WebUI now that all main features are in place, to streamline the process.
+  - On load, it should probably only include the "Drive Status" and "History" sections.
+    - Can also include the section for trying unfinished jobs again (extraction finished, compression failed), but this section would show up only if there is a failed job that corresponds to a folder in /tmp.
+  - Once "Scan Drive" is pressed and confirms data, The next section can replace it. We are then moved on to Configure Rip Job, and fill in our form.
+  - Once every field on the form is filled in, the "Start Rip Job" button get activated.
+  - Once we press "Start Rip Job", the section is again replaced, this time with the job progression section.
+  - When the job progression reaches compression, we could re-enable a Drive Status section above it.
+  - Consider all the below points in the plan as well when making this design.
 - [ ] Add real-time log streaming for `makemkvcon` execution.
 - [ ] Log streaming for both HandBrake and MakeMKV should probably reuse lines with `/r` instead of constantly pinging new lines?
   - Can this even be done when we want to stream with Websockets?
   - Other ways to avoid spamming the logs so much without sacrificing what we want in the WebUI?
-- [ ] Display whether drive is available and react to drive being connected/disconnected.
-  - Can also be used to is disable the Scan Drive button until the drive has done the initial hardware read.
 - [ ] Make active History items in WebUI update when their status changes.
   - Would be great to know when it goes from EXTRACTING -> EXTRACTED -> COMPRESSING -> FINISHED on nice runs.
   - Would also be great to be able to see visually that it fails by having it go from ie EXTRACTING -> FAILED.
@@ -104,6 +113,7 @@
   - Year must be a number between 1800 and today's year +5 (so we can don't crash if we were to want to rip an unreleased movie or extras relating to one)
   - season and episode must be a positive number
 - [ ] Add a max length to the History section
+  - Consider pagination instead, so we can avoid an ugly scrollbar?
 - [ ] Add simple notification/chime on failure and completion.
 - [ ] Add option to cancel ongoing job.
   - Could be cases where I realize after starting that the input was wrong
@@ -116,10 +126,3 @@
       Can we do fuzzy search for more/better suggestions?
       Or maybe we do a search on just fewer of the words if we have few hits - ie if "Harry Potter and the Philisopher's stone" gives few hits, just "Harry Potter" might get several.
 - [ ] Before starting actual ripping process, do say ie "Expected time: 6-10 hours" with a rough estimate based on file size (if known) and preset.
-- [ ] Design a V2 of the WebUI now that all main features are in place, to streamline the process.
-  - On load, it should probably only include the "Drive Status" and "History" sections.
-    - Can also include the section for trying unfinished jobs again (extraction finished, compression failed), but this section would show up only if there is a failed job that corresponds to a folder in /tmp.
-  - Once "Scan Drive" is pressed and confirms data, The next section can replace it. We are then moved on to Configure Rip Job, and fill in our form.
-  - Once every field on the form is filled in, the "Start Rip Job" button get activated.
-  - Once we press "Start Rip Job", the section is again replaced, this time with the job progression section.
-  - When the job progression reaches compression, we could re-enable a Drive Status section above it.
