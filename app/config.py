@@ -12,7 +12,7 @@ def get_default_handbrake_presets(languages: list[str]) -> Dict[str, HandBrakePr
             name="DVD 576p/480p (x264 Slow RF18 Decomb)",
             encoder="qsv_h264",
             quality=18,
-            encoder_preset="quality",
+            encoder_preset="balanced",
             decomb=True,
             audio_languages=languages
         ),
@@ -20,7 +20,7 @@ def get_default_handbrake_presets(languages: list[str]) -> Dict[str, HandBrakePr
             name="Blu-ray 1080p (x264 Medium RF20 Passthrough)",
             encoder="qsv_h264",
             quality=20,
-            encoder_preset="quality",
+            encoder_preset="balanced",
             decomb=False,
             audio_languages=languages
         ),
@@ -28,7 +28,7 @@ def get_default_handbrake_presets(languages: list[str]) -> Dict[str, HandBrakePr
             name="UHD 4K HDR (x265 10-bit Medium RF22 Passthrough)",
             encoder="qsv_h265_10bit",
             quality=22,
-            encoder_preset="quality",
+            encoder_preset="balanced",
             decomb=False,
             audio_languages=languages
         )
