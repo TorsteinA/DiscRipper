@@ -92,8 +92,8 @@ async def transcode_staging_directory(
 
         cmd = [
             "HandBrakeCLI",
-            "-i", str(source_path),
-            "-o", str(target_path),
+            "-i", source_path,
+            "-o", target_path,
             *preset.to_cli_args()
         ]
 
@@ -135,8 +135,10 @@ async def transcode_staging_directory(
         returncode = await process.wait()
 
         if returncode != 0:
-            logger.error(f"HandBrakeCLI failed on file {source_path} with exit code {returncode}.",  
-                         "\nThe target path was {target_path}, and should maybe be deleted manually")
+            logger.error(
+                f"HandBrakeCLI failed on file {source_path} with exit code {returncode}.\n"
+                f"The target path was {target_path}, and should maybe be deleted manually"
+            )
             raise RuntimeError(f"HandBrakeCLI transcode failed on {os.path.basename(source_path)}")
 
         output_files.append(target_path)
