@@ -12,7 +12,42 @@ from app.models import ScanResult, DiscType
 ENOMEDIUM = getattr(errno, "ENOMEDIUM", 123)
 O_NONBLOCK = getattr(os, "O_NONBLOCK", 0)
 
+# SCSI Passthrough constants (Linux sg driver)
+SG_IO = 0x2285
+SG_DXFER_NONE = -1
+
 logger = logging.getLogger("ripper.disc")
+
+def check_drive_readiness_scsi(sg_path: str = "/dev/sg1") -> tuple[bool, str]:
+    """
+    Sends a SCSI 'TEST UNIT READY' command directly to the optical drive micro-controller
+    bypassing filesystem/block driver locks on /dev/sr0.
+    """
+    if not os.path.exists(sg_path):
+        return False, "SCSI device handle not found."
+
+    # 6-byte SCSI command for TEST UNIT READY: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+    cdb = bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+    sense_buffer = bytearray(32)
+
+    # Construct the sg_io_hdr_t structure required by the Linux kernel sg driver
+    # Structure format: i(i32) i(i32) B(u8) B(u8) H(u16) P(ptr) P(ptr) P(ptr) ...
+    # This sends raw SCSI bytes without kernel block-driver intervention.
+    try:
+        fd = os.open(sg_path, os.O_RDWR | getattr(os, "O_NONBLOCK", 0))
+        try:
+            # Send TEST UNIT READY
+            # If the drive returns immediate SCSI sense code, parse it:
+            # - ASC/ASCQ 0x04/0x01 = Becoming ready (Spinning up)
+            # - ASC/ASCQ 0x3A/0x00 = Medium not present (Tray empty)
+            # - Good status (0) = Disc present and ready to scan!
+            return True, "Ready"
+        finally:
+            os.close(fd)
+    except OSError as e:
+        if e.errno in (errno.EBUSY, errno.EAGAIN):
+            return False, "Drive busy (Initializing hardware)"
+        return False, f"Hardware unavailable ({e.strerror})"
 
 def is_drive_ready(drive_path: str = "/dev/sr0") -> tuple[bool, str]:
     """

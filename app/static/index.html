@@ -214,6 +214,7 @@
 
     <script>
       let availablePresets = {};
+      let pollInterval = null;
 
       function toTitleCase(str) {
         if (!str) return "";
@@ -259,10 +260,18 @@
         }
       }
 
-      function setDriveButtonsDisabled(disabled) {
-        document.getElementById("scanBtn").disabled = disabled;
-        document.getElementById("ripBtn").disabled = disabled;
-        document.getElementById("dryRunBtn").disabled = disabled;
+      function setActionButtonsDisabled(disabled, message = "") {
+        const scanBtn = document.getElementById("scanBtn");
+        const ripBtn = document.getElementById("ripBtn");
+        const dryBtn = document.getElementById("dryRunBtn");
+
+        scanBtn.disabled = disabled;
+        ripBtn.disabled = disabled;
+        dryBtn.disabled = disabled;
+
+        if (disabled && message) {
+          document.getElementById("driveInfo").textContent = message;
+        }
       }
 
       async function performDryRun() {
@@ -738,13 +747,39 @@
         }
       }
 
+      async function pollDriveReadiness() {
+        try {
+          const res = await fetch("/api/drive-status");
+          if (!res.ok) return;
+          const data = await res.json();
+
+          if (data.ready && !data.busy) {
+            // Hardware is fully spun up & free! Enable controls cleanly
+            setActionButtonsDisabled(false);
+            document.getElementById("driveInfo").textContent =
+              "Drive Ready. Click 'Scan Drive' to proceed.";
+            clearInterval(pollInterval); // Stop polling once verified
+          } else {
+            // Keep controls locked while hardware spins up
+            setActionButtonsDisabled(
+              true,
+              data.message || "Drive initializing...",
+            );
+          }
+        } catch (err) {
+          setActionButtonsDisabled(true, "Waiting for drive status...");
+        }
+      }
+
       // Startup tasks
       loadVersion();
       loadHistory();
       loadPresets();
       document.addEventListener("DOMContentLoaded", () => {
+        setActionButtonsDisabled(true, "Checking drive state...");
         loadResumableJobs();
         // scanDrive(true);
+        pollInterval = setInterval(pollDriveReadiness, 3000);
       });
     </script>
   </body>
