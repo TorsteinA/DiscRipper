@@ -259,6 +259,12 @@
         }
       }
 
+      function setDriveButtonsDisabled(disabled) {
+        document.getElementById("scanBtn").disabled = disabled;
+        document.getElementById("ripBtn").disabled = disabled;
+        document.getElementById("dryRunBtn").disabled = disabled;
+      }
+
       async function performDryRun() {
         const btn = document.getElementById("dryRunBtn");
         const title = document.getElementById("titleInput").value.trim();
@@ -579,13 +585,13 @@
         }
       }
 
-      async function scanDrive() {
+      async function scanDrive(isInitialCheck = false) {
         const btn = document.getElementById("scanBtn");
         const info = document.getElementById("driveInfo");
         const banner = document.getElementById("errorBanner");
 
-        btn.disabled = true;
-        btn.textContent = "Scanning...";
+        setDriveButtonsDisabled(true);
+        btn.textContent = isInitialCheck ? "Checking Drive..." : "Scanning...";
         banner.classList.add("hidden");
 
         try {
@@ -595,7 +601,7 @@
           if (!res.ok) {
             banner.textContent = data.detail || "Scan failed";
             banner.classList.remove("hidden");
-            info.textContent = "Scan error encountered.";
+            info.textContent = "Drive is busy or an error occurred.";
             return;
           }
 
@@ -603,23 +609,21 @@
             window.detectedDiscType = data.disc_type;
             info.innerHTML = `
                 <div class="flex items-center space-x-2 text-emerald-400 font-medium">
-                <span>● Disc Detected</span>
+                  <span>● Disc Detected</span>
                 </div>
                 <div class="mt-2 text-xs space-y-1 text-slate-300">
-                <div><strong>Label:</strong> ${data.label || "N/A"}</div>
-                <div><strong>Type:</strong> ${data.disc_type}</div>
-                <div><strong>Titles:</strong> ${data.title_count}</div>
+                  <div><strong>Label:</strong> ${data.label || "N/A"}</div>
+                  <div><strong>Type:</strong> ${data.disc_type}</div>
+                  <div><strong>Titles:</strong> ${data.title_count}</div>
                 </div>
             `;
 
-            // Convert raw disc label to Title Case before filling input
             if (data.label && !document.getElementById("titleInput").value) {
               document.getElementById("titleInput").value = toTitleCase(
                 data.label,
               );
             }
 
-            // Auto-select corresponding HandBrake preset based on disc type
             const select = document.getElementById("presetSelect");
             if (data.disc_type === "DVD" && availablePresets["dvd"]) {
               select.value = "dvd";
@@ -639,6 +643,8 @@
           banner.classList.remove("hidden");
         } finally {
           btn.disabled = false;
+          document.getElementById("ripBtn").disabled = false;
+          document.getElementById("dryRunBtn").disabled = false;
           btn.textContent = "Scan Drive";
         }
       }
@@ -732,13 +738,14 @@
         }
       }
 
-      // load some things on startup
+      // Startup tasks
       loadVersion();
       loadHistory();
       loadPresets();
-
-      // Fetch resumable jobs when the DOM is ready
-      document.addEventListener("DOMContentLoaded", loadResumableJobs);
+      document.addEventListener("DOMContentLoaded", () => {
+        loadResumableJobs();
+        scanDrive(true);
+      });
     </script>
   </body>
 </html>

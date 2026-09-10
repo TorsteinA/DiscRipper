@@ -65,7 +65,7 @@
 
 ## Phase 5: Real-time Progress & WebSockets
 
-- [ ] Add a container version to the WebUI.
+- [x] Add a container version to the WebUI.
   - Can we display the commit sha or make a version string based on git tags, or in other ways version it nicely?
   - The important part is that it's clearly distinguishable when I'm making a change, even if I force push changes to overwrite a commit's content.
 - [ ] Display whether drive is available and react to drive being connected/disconnected.
@@ -75,6 +75,7 @@
   - On load, it should probably only include the "Drive Status" and "History" sections.
     - Can also include the section for trying unfinished jobs again (extraction finished, compression failed), but this section would show up only if there is a failed job that corresponds to a folder in /tmp.
   - Once "Scan Drive" is pressed and confirms data, The next section can replace it. We are then moved on to Configure Rip Job, and fill in our form.
+    - Would be useful to be able to start filling in data while the drive is scanning though.
   - Once every field on the form is filled in, the "Start Rip Job" button get activated.
   - Once we press "Start Rip Job", the section is again replaced, this time with the job progression section.
   - When the job progression reaches compression, we could re-enable a Drive Status section above it.

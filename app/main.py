@@ -4,6 +4,7 @@ import logging
 from dataclasses import asdict
 import shutil
 import uuid
+import asyncio
 from fastapi import BackgroundTasks, FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -27,6 +28,7 @@ logging.basicConfig(
 logger = logging.getLogger("ripper.main")
 
 app = FastAPI(title="Disc Ripper")
+drive_lock = asyncio.Lock()
 config = load_config()
 
 # MARK: Event Triggers
@@ -44,17 +46,24 @@ def healthcheck():
 
 @app.get("/api/scan")
 async def scan_disc():
-    try:
-        logger.info("Initiating optical drive scan on /dev/sr0...")
-        result = await scan_optical_drive(config.drive_path)
-        logger.info(f"Scan complete. Disc present: {result.has_disc} | Label: '{result.label}' | Type: {result.disc_type}")
-        return asdict(result)
-    except MakeMKVKeyError as e:
-        logger.error(f"Scan aborted due to MakeMKV Key failure: {e}")
+    if drive_lock.locked():
         raise HTTPException(
-            status_code=400,
-            detail=f"MakeMKV Key Error: {str(e)}"
+            status_code=423,
+            detail="Drive is currently busy with another operation."
         )
+
+    async with drive_lock:
+        try:
+            logger.info("Initiating optical drive scan on /dev/sr0...")
+            result = await scan_optical_drive(config.drive_path)
+            logger.info(f"Scan complete. Disc present: {result.has_disc} | Label: '{result.label}' | Type: {result.disc_type}")
+            return asdict(result)
+        except MakeMKVKeyError as e:
+            logger.error(f"Scan aborted due to MakeMKV Key failure: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"MakeMKV Key Error: {str(e)}"
+            )
 
 @app.get("/api/presets")
 def get_presets():
