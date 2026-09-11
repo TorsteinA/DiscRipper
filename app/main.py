@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.config import APP_VERSION, load_config
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
-from app.disc import check_drive_readiness_scsi, scan_optical_drive
+from app.disc import is_scsi_ready, scan_optical_drive
 from app.history import append_history_item, update_history_item, load_history
 from app.models import RipHistoryItem, RippingStatus
 from app.mkv import extract_disc_titles, read_job_manifest, write_job_manifest
@@ -68,12 +68,11 @@ async def scan_disc():
 @app.get("/api/drive-status")
 def get_drive_status():
     """
-    Fast, non-blocking check (< 10ms) that queries SCSI readiness.
-    Safely used by the UI to enable/disable buttons without calling makemkvcon.
+    Fast, non-blocking check (< 10ms) querying SCSI readiness via /dev/sg*.
+    Safely used by the UI to enable/disable buttons without touching /dev/sr0.
     """
-    # Auto-detect sg device associated with /dev/sr0
     sg_path = config.drive_path.replace("sr0", "sg1")
-    ready, status_msg = check_drive_readiness_scsi(sg_path)
+    ready, status_msg = is_scsi_ready(sg_path)
     
     return {
         "ready": ready,
