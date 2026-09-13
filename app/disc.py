@@ -1,13 +1,15 @@
 import asyncio
-import re
-import os
-import shutil
 import logging
+import os
+import re
+import shutil
 
-from app.makemkv_key_fetcher import validate_mkv_output, MakeMKVKeyError
-from app.models import ScanResult, DiscType
+from app.makemkv_key_fetcher import MakeMKVKeyError, validate_mkv_output
+from app.models import DiscType, ScanResult
 
 logger = logging.getLogger("ripper.disc")
+
+
 def is_scsi_ready(drive_path: str = "/dev/sr0") -> tuple[bool, str]:
     """
     Checks physical drive availability via /dev/sg* to avoid kernel
@@ -24,10 +26,11 @@ def is_scsi_ready(drive_path: str = "/dev/sr0") -> tuple[bool, str]:
     except OSError as e:
         return False, f"SCSI device busy or unavailable ({e.strerror})"
 
+
 async def scan_optical_drive(drive_path: str = "/dev/sr0") -> ScanResult:
     result = ScanResult(drive=drive_path)
 
-    # 1. Low-level SCSI readiness check (prevents /dev/sr0 kernel locks)
+    # 1. Non-blocking SCSI hardware safety pre-check
     ready, msg = is_scsi_ready(drive_path)
     if not ready:
         logger.warning(f"Drive pre-check failed: {msg}")
@@ -40,47 +43,78 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> ScanResult:
         logger.error("makemkvcon executable not found in PATH!")
         return result
 
-    # 2. Query makemkvcon for disc structure
-    logger.info("Executing makemkvcon info on disc:0")
+    # 2. Map block device path (/dev/sr0) to direct SCSI passthrough target (dev:/dev/sg1)
+    sg_target = f"dev:{drive_path.replace('sr0', 'sg1')}"
+    logger.info(f"Spawning makemkvcon on target: {sg_target}")
+
     try:
         proc_mkv = await asyncio.create_subprocess_exec(
-            makemkv_path, "-r", "info", "disc:0",
+            makemkv_path,
+            "-r",
+            "--cache=1",
+            "--noscan",
+            "info",
+            sg_target,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
-        
-        try:
-            stdout, stderr = await asyncio.wait_for(proc_mkv.communicate(), timeout=300.0)
-            output = stdout.decode(errors="ignore")
-        except asyncio.TimeoutError:
-            logger.warning("makemkvcon scan timed out after 300s. Killing process.")
-            proc_mkv.kill()
-            await proc_mkv.wait()
-            return result
 
-        validate_mkv_output(output)
+        output_lines = []
+
+        # Stream stdout line-by-line to avoid pipe buffer deadlocks
+        while True:
+            if proc_mkv.stdout is None:
+                break
+
+            try:
+                line_bytes = await asyncio.wait_for(proc_mkv.stdout.readline(), timeout=30.0)
+                if not line_bytes:
+                    break  # EOF
+
+                line = line_bytes.decode(errors="ignore").strip()
+                if line:
+                    output_lines.append(line)
+
+                # if line.startswith(("MSG:", "TCOUNT:", "CINFO:", "DRV:")):
+                logger.info(f"makemkvcon: {line}")
+
+            except asyncio.TimeoutError:
+                logger.warning("No output from makemkvcon for 30s. Terminating process.")
+                try:
+                    proc_mkv.terminate()
+                    await asyncio.sleep(0.5)
+                    if proc_mkv.returncode is None:
+                        proc_mkv.kill()
+                    await proc_mkv.wait()
+                except ProcessLookupError:
+                    pass
+                return result
+
+        await proc_mkv.wait()
+        full_output = "\n".join(output_lines)
+
+        validate_mkv_output(full_output)
 
         if proc_mkv.returncode == 0:
-            tcount_match = re.search(r"TCOUNT:(\d+)", output)
+            tcount_match = re.search(r"TCOUNT:(\d+)", full_output)
             if tcount_match:
                 result.title_count = int(tcount_match.group(1))
                 result.has_disc = True
-                logger.info(f"makemkvcon detected {result.title_count} total titles on disc.")
 
-            cinfo_match = re.search(r'CINFO:2,0,"([^"]+)"', output)
+            cinfo_match = re.search(r'CINFO:2,0,"([^"]+)"', full_output)
             if cinfo_match and not result.label:
                 result.label = cinfo_match.group(1)
 
-            if "BD-ROM" in output or "Blu-ray" in output:
+            if "BD-ROM" in full_output or "Blu-ray" in full_output:
                 result.disc_type = DiscType.BLU_RAY
-            elif "DVD-ROM" in output or "DVD-Video" in output:
+            elif "DVD-ROM" in full_output or "DVD-Video" in full_output:
                 result.disc_type = DiscType.DVD
             elif result.has_disc:
                 result.disc_type = DiscType.OPTICAL_MEDIA
 
-            logger.info(f"Disc inspection finished. Type: {result.disc_type}, Titles: {result.title_count}")
+            logger.info(f"Disc inspection finished cleanly. Type: {result.disc_type}, Titles: {result.title_count}")
         else:
-            logger.warning(f"makemkvcon exited with code {proc_mkv.returncode}: {stderr.decode().strip()}")
+            logger.warning(f"makemkvcon exited with code {proc_mkv.returncode}")
 
     except MakeMKVKeyError:
         raise

@@ -71,6 +71,7 @@
 - [ ] Display whether drive is available and react to drive being connected/disconnected.
 - [ ] Disable the Scan Drive button while the drive does the initial hardware read.
   - Starting scan before its ready locks it and it needs a power cycle.
+- [ ] Make sure disabled buttons show their "disabledness" in the UI. Right now they just don't run their function, but still have ie hover effects and look the same.
 - [ ] Design a V2 of the WebUI now that all main features are in place, to streamline the process.
   - On load, it should probably only include the "Drive Status" and "History" sections.
     - Can also include the section for trying unfinished jobs again (extraction finished, compression failed), but this section would show up only if there is a failed job that corresponds to a folder in /tmp.
