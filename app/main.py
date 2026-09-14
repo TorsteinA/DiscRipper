@@ -45,7 +45,7 @@ def healthcheck():
 @app.get("/api/scan")
 async def scan_disc():
     try:
-        logger.info("Initiating optical drive scan on /dev/sr0...")
+        logger.info("Initiating optical drive scan on /dev/sg1...")
         result = await scan_optical_drive(config.drive_path)
         logger.info(f"Scan complete. Disc present: {result.has_disc} | Label: '{result.label}' | Type: {result.disc_type}")
         return asdict(result)
@@ -127,7 +127,7 @@ def dry_run_job_configuration(req: DryRunRequest):
         "makemkvcon",
         "-r",
         "mkv",
-        "disc:0",
+        f"dev:{config.drive_path}",
         "all",
         job_staging_dir,
         f"--minlength={config.makemkv_preset.min_length_seconds}",

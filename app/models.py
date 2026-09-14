@@ -141,13 +141,13 @@ class ScanResult:
     label: str = ""
     disc_type: DiscType = DiscType.UNKNOWN
     title_count: int = 0
-    drive: str = "/dev/sr0"
+    drive: str = "/dev/sg1"
     error: Optional[str] = None
 
 
 class AppSettings(BaseSettings):
     # storage
-    drive_path: str = "/dev/sr0"
+    drive_path: str = "/dev/sg1"
     data_dir: str = "/data"
     temp_dir: str = "/tmp/ripper"
     output_dir_movies: str = "/media/movies"

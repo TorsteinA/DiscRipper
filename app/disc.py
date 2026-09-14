@@ -9,7 +9,7 @@ from app.models import ScanResult, DiscType
 
 logger = logging.getLogger("ripper.disc")
 
-async def scan_optical_drive(drive_path: str = "/dev/sr0") -> ScanResult:
+async def scan_optical_drive(drive_path: str = "/dev/sg1") -> ScanResult:
     result = ScanResult(drive=drive_path)
 
     # Fail fast and clean if the physical drive is powered off / disconnected
@@ -25,10 +25,10 @@ async def scan_optical_drive(drive_path: str = "/dev/sr0") -> ScanResult:
         return result
 
     # Step 2: Query makemkvcon for disc structure & metadata (with 15s timeout safeguard)
-    logger.debug(f"Executing makemkvcon info on disc:0")
+    logger.debug(f"Executing makemkvcon info on /dev/sg1")
     try:
         proc_mkv = await asyncio.create_subprocess_exec(
-            makemkv_path, "-r", "info", "disc:0",
+            makemkv_path, "-r", "info", "/dev/sg1",
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
