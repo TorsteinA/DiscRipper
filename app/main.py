@@ -20,13 +20,12 @@ from app.transcode import transcode_staging_directory
 
 # Configure structured console logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
 logger = logging.getLogger("ripper.main")
-
 app = FastAPI(title="Disc Ripper")
 config = load_config()
 
@@ -59,11 +58,8 @@ async def scan_disc():
 
 @app.get("/api/presets")
 def get_presets():
-    return {
-        "handbrake": {k: asdict(v) for k, v in config.handbrake_presets.items()},
-        "makemkv": asdict(config.makemkv_preset)
-    }
-
+    return get_presets_from_config(config)
+    
 @app.get("/api/history")
 def get_ripping_history():
     return load_history(config.data_dir)

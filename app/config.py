@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import os
 import logging
 from typing import Dict
@@ -54,3 +55,9 @@ def load_config() -> AppSettings:
         f"data={config.data_dir}"
     )
     return config
+
+def get_presets_from_config(config: AppSettings):
+    return {
+        "handbrake": {k: asdict(v) for k, v in config.handbrake_presets.items()},
+        "makemkv": asdict(config.makemkv_preset)
+    }
