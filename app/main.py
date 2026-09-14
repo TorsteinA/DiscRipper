@@ -4,10 +4,11 @@ import logging
 from dataclasses import asdict
 import shutil
 import uuid
-from fastapi import BackgroundTasks, FastAPI, Response, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.config import APP_VERSION, load_config
+from app.config import APP_VERSION, get_presets_from_config, load_config
+from app.favicon_server import get_favicon
 from app.makemkv_key_fetcher import ensure_makemkv_key, MakeMKVKeyError
 from app.disc import scan_optical_drive
 from app.history import append_history_item, update_history_item, load_history
@@ -73,21 +74,9 @@ def get_version():
 
 # MARK: Web UI
 
-# SVG Favicon endpoint (Optical Disc Icon)
-FAVICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Outer Indigo Circle -->
-  <circle cx="50" cy="50" r="48" fill="#4f46e5" />
-  <!-- Shiny Disc Body -->
-  <circle cx="50" cy="50" r="32" fill="#cbd5e1" />
-  <!-- Inner Reflective Ring -->
-  <circle cx="50" cy="50" r="18" fill="#94a3b8" />
-  <!-- Clear Center Hole -->
-  <circle cx="50" cy="50" r="10" fill="#0f172a" />
-</svg>"""
-
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
-    return Response(content=FAVICON_SVG, media_type="image/svg+xml")
+    return get_favicon()
 
 # Serve Static Frontend Files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

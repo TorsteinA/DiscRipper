@@ -8,7 +8,7 @@ While Gemini has been heavily involved when writing this tool, I have done most 
 
 There will be a lot of weird commits, as I'm developing on a machine that doesn't have the environment to run the code. Pushing, creating the image, and pulling the image, is how the code is manually tested.
 
-# Example `compose.yaml`
+## Example `compose.yaml`
 
 ```yaml
 services:
@@ -39,7 +39,7 @@ services:
 
 ---
 
-# Prerequisites
+## Prerequisites
 
 DiscRipper runs with flags set for **Intel Quick Sync** and will fail if it's being run with a processor that does not support it.
 
