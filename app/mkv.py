@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import shutil
 from app.models import AppSettings
 
 logger = logging.getLogger("ripper.mkv")
@@ -15,16 +16,7 @@ async def extract_disc_titles(
     """
     os.makedirs(staging_dir, exist_ok=True)
 
-    cmd = [
-        "makemkvcon",
-        "-r",
-        "mkv",
-        f"dev:{config.drive_path}",
-        "all",
-        staging_dir,
-        f"--minlength={config.makemkv_preset.min_length_seconds}",
-    ]
-
+    cmd = get_mkv_extraction_command(config.drive_path, staging_dir, config.makemkv_preset.min_length_seconds)
     logger.info(f"Executing MakeMKV extraction: {' '.join(cmd)}")
 
     process = None
@@ -84,3 +76,42 @@ async def extract_disc_titles(
 
     logger.info(f"Extraction successful. Produced {len(extracted_files)} title(s).")
     return sorted(extracted_files)
+
+def get_mkv_extraction_command(drive_path: str, staging_dir: str, min_length_seconds: int):
+    try:
+        makemkv_path = _get_makemkvcon_path()
+    except:
+        raise
+    return [
+            makemkv_path,
+            "-r",
+            "mkv",
+            f"dev:{drive_path}",
+            "all",
+            staging_dir,
+            f"--minlength={min_length_seconds}",
+        ]
+
+def get_mkv_info_command(drive_path: str):
+    try:
+        makemkv_path = _get_makemkvcon_path()
+    except:
+        raise
+    return [
+        makemkv_path, 
+        "-r", 
+        "info", 
+        drive_path,
+    ]
+
+def _get_makemkvcon_path():
+    makemkv_path = shutil.which("makemkvcon")
+    if not makemkv_path:
+        e_msg = "makemkvcon executable not found in PATH!"
+        logger.error(e_msg)
+        raise Exception(e_msg)
+    return makemkv_path
+
+
+
+

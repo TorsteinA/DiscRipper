@@ -8,7 +8,7 @@ from fastapi import HTTPException
 
 from app.history import append_history_item, update_history_item
 from app.job_manifest import write_job_manifest
-from app.mkv import extract_disc_titles
+from app.mkv import extract_disc_titles, get_mkv_extraction_command
 from app.models import AppSettings, DryRunRequest, RipHistoryItem, RipRequest, RippingStatus
 from app.paths import get_disc_output_path, get_target_output_path
 from app.transcode import transcode_staging_directory
@@ -35,15 +35,11 @@ async def run_dry_run(config: AppSettings, req: DryRunRequest):
     simulated_job_id = "job_sample123"
     job_staging_dir = os.path.join(config.temp_dir, simulated_job_id)
 
-    makemkv_cmd = [
-        "makemkvcon",
-        "-r",
-        "mkv",
-        f"dev:{config.drive_path}",
-        "all",
-        job_staging_dir,
-        f"--minlength={config.makemkv_preset.min_length_seconds}",
-    ]
+    try:
+        makemkv_cmd = get_mkv_extraction_command(config.drive_path, job_staging_dir, config.makemkv_preset.min_length_seconds)
+    except:
+        # TODO raise an HTTPException with contents of caught exception? 
+        raise
 
     handbrake_cmd_template = [
         "HandBrakeCLI",
