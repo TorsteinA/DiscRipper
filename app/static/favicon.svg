@@ -1,10 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- Outer Indigo Circle -->
+  <defs>
+    <!-- Clip path masking glare exclusively to the two grey inner rings -->
+    <clipPath id="disc-grey-rings">
+      <circle cx="50" cy="50" r="32" />
+    </clipPath>
+  </defs>
+
+  <!-- Outer Indigo Base Circle -->
   <circle cx="50" cy="50" r="48" fill="#4f46e5" />
-  <!-- Shiny Disc Body -->
-  <circle cx="50" cy="50" r="32" fill="#cbd5e1" />
-  <!-- Inner Reflective Ring -->
-  <circle cx="50" cy="50" r="18" fill="#94a3b8" />
+
+  <!-- Group clipped to stay strictly inside the grey disc surface -->
+  <g clip-path="url(#disc-grey-rings)">
+    <!-- Shiny Grey Disc Body -->
+    <circle cx="50" cy="50" r="32" fill="#cbd5e1" />
+
+    <!-- Diagonal Glare / Reflective Beams -->
+    <polygon points="50,50 18,5 38,5" fill="#ffffff" opacity="0.4" />
+    <polygon points="50,50 82,95 62,95" fill="#ffffff" opacity="0.4" />
+    <polygon points="50,50 95,18 95,38" fill="#ffffff" opacity="0.25" />
+    <polygon points="50,50 5,82 5,62" fill="#ffffff" opacity="0.25" />
+
+    <!-- Inner Reflective Grey Ring -->
+    <circle cx="50" cy="50" r="12" fill="#94a3b8" />
+  </g>
+
   <!-- Clear Center Hole -->
-  <circle cx="50" cy="50" r="10" fill="#0f172a" />
+  <circle cx="50" cy="50" r="7" fill="#0f172a" />
 </svg>
