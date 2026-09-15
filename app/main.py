@@ -43,7 +43,7 @@ def get_version():
 #region Web UI
 
 @app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
+def favicon():
     return get_favicon()
 
 # Serve Static Frontend Files
@@ -87,7 +87,7 @@ async def resume_stage3_job(job_id: str, background_tasks: BackgroundTasks):
     return resume_job_that_failed_stage_3(config, job_id, background_tasks);
 
 @app.get("/api/jobs/resumable")
-async def get_resumable_jobs():
+def get_resumable_jobs():
     return get_jobs_that_failed_stage_3(config)
 
 @app.delete("/api/jobs/{job_id}", status_code=200)

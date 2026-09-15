@@ -49,7 +49,7 @@ async def resume_job_that_failed_stage_3(config: AppSettings, job_id: str, backg
         "staging_dir": staging_dir
     }
 
-async def get_jobs_that_failed_stage_3(config: AppSettings):
+def get_jobs_that_failed_stage_3(config: AppSettings):
     logger.info("Getting jobs that failed stage 3, " \
     "by searching for manifests in staging directories")
 

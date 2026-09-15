@@ -94,7 +94,8 @@
   - We can probably safely assume that ie starting on step 3 means step 2 is finished and can be filled up, even if the last stdout wasn't a progress=1.0
   - Do I want separate progress bars for every title that gets extracted in step 2, for step 3, or do I just extend the one progress bar to cover all?
     - Maybe both?
-    ```
+
+    ```md
         Stage 1:     |XXXXXXXXXXXXXXXXXXXXX|
         Stage 2:     |XXXXXXXXXXXXXXXXXXXXX|
             title 1:   |XXXXXXXXXXXXXXXXXXX|
