@@ -121,7 +121,7 @@
   - Could be cases where I realize after starting that the input was wrong
 - [ ] Add a simple Queue system.
   - [ ] Disable Scan Drive and Action Buttons when there is an ongoing job using the drive. (Stage 2)
-  - [ ] Instead of /api/rip starting a job directly, it adds to an Extraction Queue.
+  - [ ] Instead of /api/jobs/new starting a job directly, it adds to an Extraction Queue.
   - [ ] When done extracting, it doesn't start compression directly, it adds to a Compression Queue.
   - [ ] Updates to History should also probably be queued so that only one process tries to edit the file simultaneously.
 - [ ] When disk is detected, look-up autofilled title to suggest year.

@@ -1,10 +1,9 @@
 import os
 import asyncio
 import logging
-import re
 from typing import List
+from app.job_manifest import read_job_manifest
 from app.models import AppSettings, MediaType, UnsupportedMediaTypeError
-from app.mkv import read_job_manifest
 from app.paths import get_disc_output_path, get_target_output_path, get_next_extra_number
 
 logger = logging.getLogger("ripper.transcode")

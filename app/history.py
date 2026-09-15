@@ -51,6 +51,7 @@ def save_history(data_dir: str, items: List[RipHistoryItem]) -> None:
 def append_history_item(data_dir: str, item: RipHistoryItem) -> None:
     history = load_history(data_dir)
     history.insert(0, item)  # Newest first
+    # TODO: Consider keeping history in correct order but reverse for UI instead
     save_history(data_dir, history)
 
 def update_history_item(data_dir: str, job_id: str, **updates) -> None:

@@ -19,11 +19,13 @@ class MediaType(str, Enum):
     MovieExtras = 'movie extras'
 
 class RippingStatus(str, Enum):
+    INITIATING = "INITIATING"      # Stage 1: initiate by preparing staging area 
     EXTRACTING = "EXTRACTING"      # Stage 2: makemkvcon reading optical media
     EXTRACTED = "EXTRACTED"        # Staged in /tmp/ripper/job_<id>/ awaiting transcode
     COMPRESSING = "COMPRESSING"    # Stage 3: HandBrakeCLI active
     COMPLETED = "COMPLETED"        # Final MKV placed in Jellyfin library
     FAILED = "FAILED"              # Pipeline error encountered
+    FAILED1 = "FAILED_IN_STAGE_1"  # Pipeline error encountered at stage 1
     FAILED2 = "FAILED_IN_STAGE_2"  # Pipeline error encountered at stage 2
     FAILED3 = "FAILED_IN_STAGE_3"  # Pipeline error encountered at stage 3
 
@@ -112,25 +114,12 @@ class DryRunRequest(BaseModel):
     season: int = 1
     episode: int = 1
 
-class RipRequest(BaseModel):
-    title: str
-    year: str
-    media_type: MediaType = MediaType.Movie
-    preset_key: str = "dvd"
+class RipRequest(DryRunRequest):
     disc_type: DiscType = DiscType.DVD
-    season: int = 1
-    episode: int = 1
 
-class JobManifest(BaseModel):
+class JobManifest(RipRequest):
     job_id: str
-    title: str
-    year: str
-    media_type: MediaType
-    disc_type: DiscType
-    preset_key: str
-    season: int = 1
-    episode: int = 1
-    status: str = "RIPPED"
+    status: RippingStatus
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 

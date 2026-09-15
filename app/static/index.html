@@ -240,6 +240,8 @@
         const badgeClasses =
           "px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap shrink-0";
         switch (status) {
+          case "INITIATING":
+            return `<span class="${badgeClasses} bg-amber-900/60 text-amber-300 border border-amber-700 animate-pulse">Initiating...</span>`;
           case "EXTRACTING":
             return `<span class="${badgeClasses} bg-amber-900/60 text-amber-300 border border-amber-700 animate-pulse">💿 EXTRACTING</span>`;
           case "EXTRACTED":
@@ -250,6 +252,8 @@
             return `<span class="${badgeClasses} bg-emerald-900/60 text-emerald-300 border border-emerald-700">✓ COMPLETED</span>`;
           case "FAILED":
             return `<span class="${badgeClasses} bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED</span>`;
+          case "FAILED_IN_STAGE_1":
+            return `<span class="${badgeClasses} bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 1</span>`;
           case "FAILED_IN_STAGE_2":
             return `<span class="${badgeClasses} bg-rose-900/60 text-rose-300 border border-rose-700">✕ FAILED Stage 2</span>`;
           case "FAILED_IN_STAGE_3":
@@ -289,7 +293,7 @@
         banner.classList.add("hidden");
 
         try {
-          const res = await fetch("/api/dry-run", {
+          const res = await fetch("/api/jobs/dry-run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -357,7 +361,7 @@
         banner.classList.add("hidden");
 
         try {
-          const res = await fetch("/api/rip", {
+          const res = await fetch("/api/jobs/new", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
